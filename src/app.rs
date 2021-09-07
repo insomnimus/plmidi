@@ -35,5 +35,17 @@ pub fn new() -> App<'static> {
 		.long("list")
 		.about("List available MIDI output devices.");
 
-	app.arg(device).arg(list).arg(file)
+	let speed = Arg::new("speed")
+		.short('x')
+		.long("speed")
+		.about("The playback rate, 1.0 = normal.")
+		.takes_value(true)
+		.validator(|s| match s.parse::<f32>() {
+			Err(_) => Err(String::from("the value must be any number above 0.0")),
+			Ok(n) if n <= 0.0 => Err(String::from("the value must be any number above 0.0")),
+			Ok(_) => Ok(()),
+		})
+		.default_value("1.0");
+
+	app.arg(device).arg(list).arg(speed).arg(file)
 }

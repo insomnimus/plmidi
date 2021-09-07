@@ -70,6 +70,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 		return list_devices();
 	}
 
+	let speed = m.value_of("speed").unwrap().parse::<f32>().unwrap();
 	let n_device = m.value_of("device").unwrap().parse::<usize>().unwrap();
 	let file_name = m.value_of("file").unwrap();
 
@@ -77,7 +78,8 @@ fn run() -> Result<(), Box<dyn Error>> {
 	let data = fs::read(file_name)?;
 
 	let Smf { header, tracks } = Smf::parse(&data)?;
-	let timer = Ticker::try_from(header.timing)?;
+	let mut timer = Ticker::try_from(header.timing)?;
+	timer.speed = speed;
 
 	let sheet = match header.format {
 		Format::SingleTrack | Format::Sequential => Sheet::sequential(&tracks),
