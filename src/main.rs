@@ -1,6 +1,7 @@
 mod app;
 
 use std::{
+	convert::TryFrom,
 	error::Error,
 	fs,
 	process,
@@ -11,8 +12,8 @@ use midir::{
 	MidiOutputConnection,
 };
 use midly::{
+	Format,
 	Smf,
-	Timing,
 };
 use nodi::{
 	Player,
@@ -76,13 +77,13 @@ fn run() -> Result<(), Box<dyn Error>> {
 	let data = fs::read(file_name)?;
 
 	let Smf { header, tracks } = Smf::parse(&data)?;
-	let ticks_per_beat = match header.timing {
-		Timing::Metrical(n) => u16::from(n),
-		_ => return Err("unsupported time format".into()),
+	let timer = Ticker::try_from(header.timing)?;
+
+	let sheet = match header.format {
+		Format::SingleTrack | Format::Sequential => Sheet::sequential(&tracks),
+		Format::Parallel => Sheet::parallel(&tracks),
 	};
 
-	let timer = Ticker::new(ticks_per_beat);
-	let sheet = Sheet::parallel(&tracks);
 	let mut player = Player::new(out, timer);
 	player.play_sheet(&sheet);
 	Ok(())
