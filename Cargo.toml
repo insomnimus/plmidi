@@ -9,4 +9,4 @@ license = "MIT"
 clap = "3.0.0-beta.4"
 midir = "0.7.0"
 midly = "0.5.2"
-nodi = "0.1.3"
+nodi = { version = "0.2.*", features = [ "midir" ] }
