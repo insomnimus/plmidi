@@ -312,6 +312,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "nodi"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a04aeffff7cbc909a22de63c149a687e70e958ca6c179799824ef1781320fa2"
+dependencies = [
+ "log",
+ "midir",
+ "midly",
+]
+
+[[package]]
 name = "num_cpus"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -335,12 +346,12 @@ checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
 
 [[package]]
 name = "plmidi"
-version = "0.2.0"
+version = "0.5.0"
 dependencies = [
  "clap",
- "log",
  "midir",
  "midly",
+ "nodi",
 ]
 
 [[package]]

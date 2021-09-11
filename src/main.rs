@@ -5,6 +5,7 @@ use std::{
 	error::Error,
 	fs,
 	process,
+	time::Duration,
 };
 
 use midir::{
@@ -19,7 +20,19 @@ use nodi::{
 	Player,
 	Sheet,
 	Ticker,
+	Timer,
 };
+
+fn format_duration(t: Duration) -> String {
+	let secs = t.as_secs();
+	let mins = secs / 60;
+	let secs = secs % 60;
+	if mins > 0 {
+		format!("{}m{}s", mins, secs)
+	} else {
+		format!("{}s", secs)
+	}
+}
 
 fn list_devices() -> Result<(), Box<dyn Error>> {
 	let midi_out = MidiOutput::new("nodi")?;
@@ -78,6 +91,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 	let data = fs::read(file_name)?;
 
 	let Smf { header, tracks } = Smf::parse(&data)?;
+
 	let mut timer = Ticker::try_from(header.timing)?;
 	timer.speed = speed;
 
@@ -85,6 +99,13 @@ fn run() -> Result<(), Box<dyn Error>> {
 		Format::SingleTrack | Format::Sequential => Sheet::sequential(&tracks),
 		Format::Parallel => Sheet::parallel(&tracks),
 	};
+
+	println!("Playing {}", &file_name);
+	let mut t = timer;
+	println!(
+		"Total duration: {}",
+		format_duration(t.duration(&sheet[..]))
+	);
 
 	let mut player = Player::new(out, timer);
 	player.play_sheet(&sheet);
