@@ -1,0 +1,4 @@
+rustflags = [
+	"-Ctarget-feature=+crt-static",
+	"-Clink-arg=-lm",
+]

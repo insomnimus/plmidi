@@ -1,10 +1,4 @@
-use clap::{
-	crate_authors,
-	crate_version,
-	App,
-	AppSettings,
-	Arg,
-};
+use clap::{crate_authors, crate_version, App, AppSettings, Arg};
 
 pub fn new() -> App<'static> {
 	let app = App::new("plmidi")

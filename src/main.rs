@@ -1,27 +1,10 @@
 mod app;
 
-use std::{
-	convert::TryFrom,
-	error::Error,
-	fs,
-	process,
-	time::Duration,
-};
+use std::{convert::TryFrom, error::Error, fs, process, time::Duration};
 
-use midir::{
-	MidiOutput,
-	MidiOutputConnection,
-};
-use midly::{
-	Format,
-	Smf,
-};
-use nodi::{
-	Player,
-	Sheet,
-	Ticker,
-	Timer,
-};
+use midir::{MidiOutput, MidiOutputConnection};
+use midly::{Format, Smf};
+use nodi::{Player, Sheet, Ticker, Timer};
 
 fn format_duration(t: Duration) -> String {
 	let secs = t.as_secs();
