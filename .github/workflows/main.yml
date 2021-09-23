@@ -161,14 +161,10 @@
         },
         {
           "name": "Build | Build",
-          "env": {
-            "SDKROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk"
-          },
           "uses": "actions-rs/cargo@v1.0.3",
           "with": {
             "command": "build",
-            "args": "--release --locked --target ${{ matrix.target }}",
-            "use-cross": "${{ matrix.os == 'ubuntu-latest' }}"
+            "args": "--release --locked --target ${{ matrix.target }}"
           }
         },
         {

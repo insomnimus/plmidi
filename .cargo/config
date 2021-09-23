@@ -1,4 +1,11 @@
+[target.x86_64-apple-darwin]
 rustflags = [
-	"-Ctarget-feature=+crt-static",
-	"-Clink-arg=-lm",
+	"-Clink-arg=-undefined",
+	"-Clink-arg=dynamic_lookup",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+	"-Clink-arg=-undefined",
+	"-Clink-arg=dynamic_lookup",
 ]
