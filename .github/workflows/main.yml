@@ -105,19 +105,9 @@
               "target": "x86_64-pc-windows-msvc"
             },
             {
-              "os": "ubuntu-latest",
-              "target": "aarch64-unknown-linux-gnu",
-              "name": "plmidi-linux-aarch64.tar.gz"
-            },
-            {
               "os": "windows-latest",
               "target": "i686-pc-windows-msvc",
               "name": "plmidi-windows-x86.zip"
-            },
-            {
-              "os": "ubuntu-latest",
-              "target": "i686-unknown-linux-gnu",
-              "name": "plmidi-linux-x86.tar.gz"
             },
             {
               "os": "macos-11",
