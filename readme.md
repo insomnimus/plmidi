@@ -3,6 +3,20 @@
 A command line MIDI player.
 
 # Installation
+Grab a binary for your platform from the [releases page](https://github.com/insomnimus/plmidi/releases).
+
+# Building From Source
+You need an up to date rust toolchain installed.
+
+On *NIX systems, you also need alsa development libraries:
+
+```sh
+# Debian and derivatives
+apt install libasound2-dev
+
+# RHEL and derivatives
+dnf install alsa-lib-devel
+```
 
 ```shell
 # to install after a git clone
