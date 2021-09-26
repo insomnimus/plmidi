@@ -12,4 +12,4 @@ keywords = [ "midi", "music", "cli" ]
 clap = "3.0.0-beta.4"
 midir = "0.7.0"
 midly = "0.5.2"
-nodi = { version = "0.6.0", features = [ "midir" ] }
+nodi = { version = "0.6.3", features = [ "midir" ] }
