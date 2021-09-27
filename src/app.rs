@@ -1,4 +1,4 @@
-use clap::{crate_authors, crate_version, App, AppSettings, Arg};
+use clap::{crate_authors, crate_version, App, AppSettings, Arg, ArgSettings};
 
 pub fn new() -> App<'static> {
 	let app = App::new("plmidi")
@@ -41,5 +41,21 @@ pub fn new() -> App<'static> {
 		})
 		.default_value("1.0");
 
-	app.arg(device).arg(list).arg(speed).arg(file)
+	let transpose = Arg::new("transpose")
+		.short('t')
+		.long("transpose")
+		.about("Transpose the track by `n` semitones.")
+		.value_name("n")
+		.setting(ArgSettings::AllowHyphenValues)
+		.validator(|s| {
+			s.parse::<i8>()
+				.map(|_| {})
+				.map_err(|_| "the value must be an integer between -127 and 127".to_string())
+		});
+
+	app.arg(transpose)
+		.arg(device)
+		.arg(list)
+		.arg(speed)
+		.arg(file)
 }

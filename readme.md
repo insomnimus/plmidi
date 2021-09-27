@@ -1,5 +1,4 @@
 # plmidi
-
 A command line MIDI player.
 
 # Installation
@@ -32,7 +31,7 @@ cargo install --path . --locked
 # Usage
 
 ```òutput
-plmidi 0.1.2
+plmidi 0.6.0
 
 Taylan G├╢kkaya <insomnimus.dev@gmail.com>
 
@@ -49,5 +48,7 @@ OPTIONS:
                              0]
     -h, --help               Print help information
     -l, --list               List available MIDI output devices.
+    -t, --transpose <n>      Transpose the track by `n` semitones.
     -V, --version            Print version information
+    -x, --speed <speed>      The playback rate, 1.0 = normal. [default: 1.0]
 ```

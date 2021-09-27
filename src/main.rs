@@ -67,6 +67,10 @@ fn run() -> Result<(), Box<dyn Error>> {
 	}
 
 	let speed = m.value_of("speed").unwrap().parse::<f32>().unwrap();
+	let transpose = m
+		.value_of("transpose")
+		.map(|s| s.parse::<i8>().unwrap())
+		.unwrap_or(0);
 	let n_device = m.value_of("device").unwrap().parse::<usize>().unwrap();
 	let file_name = m.value_of("file").unwrap();
 
@@ -78,10 +82,12 @@ fn run() -> Result<(), Box<dyn Error>> {
 	let mut timer = Ticker::try_from(header.timing)?;
 	timer.speed = speed;
 
-	let sheet = match header.format {
+	let mut sheet = match header.format {
 		Format::SingleTrack | Format::Sequential => Sheet::sequential(&tracks),
 		Format::Parallel => Sheet::parallel(&tracks),
 	};
+
+	sheet.transpose(transpose, false);
 
 	println!("Playing {}", &file_name);
 	let mut t = timer;
