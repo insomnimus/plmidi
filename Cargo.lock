@@ -313,9 +313,9 @@ dependencies = [
 
 [[package]]
 name = "nodi"
-version = "0.7.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9622aca4759f668d66497043a03f96a409f45d101c116ad96658bc4c4cd53f44"
+checksum = "88d7fe58ae382cfff48b516bf274f82e683a5f04270a4e749a68e2502d1f3590"
 dependencies = [
  "log",
  "midir",
@@ -346,12 +346,14 @@ checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
 
 [[package]]
 name = "plmidi"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "clap",
+ "log",
  "midir",
  "midly",
  "nodi",
+ "simple_logger",
 ]
 
 [[package]]
@@ -426,6 +428,17 @@ name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
+
+[[package]]
+name = "simple_logger"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7de33c687404ec3045d4a0d437580455257c0436f858d702f244e7d652f9f07"
+dependencies = [
+ "atty",
+ "log",
+ "winapi",
+]
 
 [[package]]
 name = "strsim"

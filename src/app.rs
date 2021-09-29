@@ -53,7 +53,14 @@ pub fn new() -> App<'static> {
 				.map_err(|_| "the value must be an integer between -127 and 127".to_string())
 		});
 
-	app.arg(transpose)
+	let verbose = Arg::new("verbose")
+		.short('v')
+		.long("verbose")
+		.about("Verbosity; specify twice for even more verbose output.")
+		.setting(ArgSettings::MultipleOccurrences);
+
+	app.arg(verbose)
+		.arg(transpose)
 		.arg(device)
 		.arg(list)
 		.arg(speed)

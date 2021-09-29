@@ -2,6 +2,7 @@ mod app;
 
 use std::{convert::TryFrom, error::Error, fs, process, time::Duration};
 
+use log::Level;
 use midir::{MidiOutput, MidiOutputConnection};
 use midly::{Format, Smf};
 use nodi::{Player, Sheet, Ticker, Timer};
@@ -66,6 +67,12 @@ fn run() -> Result<(), Box<dyn Error>> {
 		return list_devices();
 	}
 
+	match m.occurrences_of("verbose") {
+		1 => simple_logger::init_with_level(Level::Info)?,
+		2 => simple_logger::init_with_level(Level::Debug)?,
+		_ => (),
+	};
+
 	let speed = m.value_of("speed").unwrap().parse::<f32>().unwrap();
 	let transpose = m
 		.value_of("transpose")
@@ -96,7 +103,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 		format_duration(t.duration(&sheet[..]))
 	);
 
-	let mut player = Player::new(out, timer);
+	let mut player = Player::new(timer, out);
 	player.play_sheet(&sheet);
 	Ok(())
 }
