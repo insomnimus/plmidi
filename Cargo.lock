@@ -313,9 +313,9 @@ dependencies = [
 
 [[package]]
 name = "nodi"
-version = "0.8.0"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88d7fe58ae382cfff48b516bf274f82e683a5f04270a4e749a68e2502d1f3590"
+checksum = "62562f5728b3e21fe7215b33161326774a4f2e6998680412a42eab606a75c453"
 dependencies = [
  "log",
  "midir",
@@ -346,7 +346,7 @@ checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
 
 [[package]]
 name = "plmidi"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "clap",
  "log",
