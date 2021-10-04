@@ -11,7 +11,6 @@ use std::{
 	time::Duration,
 };
 
-use anyhow::{bail, ensure, Error};
 use crossterm::{
 	event::{self, Event, KeyCode, KeyModifiers},
 	terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, Clear, ClearType},
@@ -21,6 +20,8 @@ use log::Level;
 use midir::{MidiOutput, MidiOutputConnection};
 use midly::{Format, Smf};
 use nodi::{Player, Sheet, Ticker, Timer};
+
+type Error = Box<dyn ::std::error::Error>;
 
 fn print(s: &str) {
 	fn inner(s: &str) -> Result<(), io::Error> {
@@ -81,16 +82,19 @@ fn get_midi(n: usize) -> Result<MidiOutputConnection, Error> {
 
 	let out_ports = midi_out.ports();
 	if out_ports.is_empty() {
-		bail!("no MIDI output device detected");
+		return Err("no midi output device detected".into());
 	}
-	ensure!(
-		n < out_ports.len(),
-		"only {} MIDI devices detected; run with --list  to see them",
-		out_ports.len()
-	);
+
+	if n >= out_ports.len() {
+		return Err(format!(
+			"only {} MIDI devices detected; run with --list  to see them",
+			out_ports.len()
+		)
+		.into());
+	}
 
 	let out_port = &out_ports[n];
-	let out = midi_out.connect(out_port, "cello-tabs")?;
+	let out = midi_out.connect(out_port, "plmidi")?;
 	Ok(out)
 }
 
@@ -186,7 +190,7 @@ fn listen_keys(sender: SyncSender<()>) {
 
 fn main() {
 	if let Err(e) = run() {
-		eprintln!("error: {:?}", e);
+		eprintln!("error: {}", e);
 		process::exit(2);
 	}
 }
