@@ -1,3 +1,5 @@
 [target.aarch64-unknown-linux-gnu]
-# image = "ghcr.io/insomnimus/audio-rs-cross@sha256:6b044aa1826251ef6c7ba9afff02b4828ac3ddc2091e2f7e4fbee74c0f786d9b"
-image = "ghcr.io/insomnimus/audio-rs-cross:linux-arm64"
+image = "ghcr.io/insomnimus/audio-rs-cross:aarch64"
+
+[target.armv7-unknown-linux-gnueabihf]
+image = "ghcr.io/insomnimus/audio-rs-cross:armhf"

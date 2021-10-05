@@ -445,7 +445,7 @@ checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
 
 [[package]]
 name = "plmidi"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "clap",
  "crossterm",

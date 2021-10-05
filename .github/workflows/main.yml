@@ -68,24 +68,39 @@
         "matrix": {
           "include": [
             {
-              "os": "ubuntu-latest",
-              "name": "plmidi-linux-x64.tar.gz",
-              "target": "x86_64-unknown-linux-gnu"
+              "target": "x86_64-unknown-linux-gnu",
+              "name": "plmidi-x86_64-linux.tar.gz",
+              "os": "ubuntu-latest"
             },
             {
-              "os": "windows-latest",
-              "name": "plmidi-windows-x64.zip",
-              "target": "x86_64-pc-windows-msvc"
+              "target": "x86_64-pc-windows-msvc",
+              "name": "plmidi-x86_64-windows.zip",
+              "os": "windows-latest"
             },
             {
-              "os": "windows-latest",
+            "target": "x86_64-apple-darwin",
+            "name": "plmidi-x86_64-osx.tar.gz",
+            "os": "macos-11"
+            },
+            {
+            "target": "aarch64-apple-darwin",
+            "name": "plmidi-aarch64-osx.tar.gz",
+            "os": "macos-11"
+            },
+            {
               "target": "i686-pc-windows-msvc",
-              "name": "plmidi-windows-x86.zip"
+              "name": "plmidi-i686-windows.zip",
+              "os": "windows-latest"
             },
             {
-              "os": "ubuntu-latest",
               "target": "aarch64-unknown-linux-gnu",
-              "name": "plmidi-linux-aarch64.tar.gz"
+              "name": "plmidi-aarch64-linux.tar.gz",
+              "os": "ubuntu-latest"
+            },
+            {
+              "target": "armv7-unknown-linux-gnueabihf",
+              "name": "plmidi-armv7-linux.tar.gz",
+              "os": "ubuntu-latest"
             }
           ]
         }
@@ -128,7 +143,7 @@
           "with": {
             "command": "build",
             "args": "--release --target ${{ matrix.target }}",
-            "use-cross": "${{ matrix.target == 'aarch64-unknown-linux-gnu' }}"
+            "use-cross": "${{ matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-unknown-linux-gnu' }}"
           }
         },
         {
