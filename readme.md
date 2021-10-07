@@ -34,6 +34,11 @@ apt install libjack-jackd2-dev
 dnf install jack-audio-connection-kit-devel
 ```
 
+You can install from crates.io:
+`cargo install plmidi --locked`
+
+Or, you can clone it:
+
 ```shell
 # to install after a git clone
 git clone https://github.com/insomnimus/plmidi
@@ -42,9 +47,6 @@ git checkout main
 cargo install --path . --locked
 # To use the `jack` backend:
 cargo install --path . --locked --features=jack
-
-# here's a one liner:
-# cargo install --locked --branch main --git https://github.com/insomnimus/plmidi
 ```
 
 # Usage
