@@ -19,7 +19,7 @@ use crossterm::{
 use log::Level;
 use midir::{MidiOutput, MidiOutputConnection};
 use midly::{Format, Smf};
-use nodi::{Player, Sheet, Ticker, Timer};
+use nodi::{timers::Ticker, Player, Sheet, Timer};
 
 type Error = Box<dyn ::std::error::Error>;
 
