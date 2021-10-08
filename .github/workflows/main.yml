@@ -228,7 +228,7 @@
           "uses": "actions-rs/cargo@v1.0.3",
           "with": {
             "command": "publish",
-            "args": "--token ${{ secrets.CRATES_IO_TOKEN }}"
+            "args": "--token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty"
           }
         }
       ]
