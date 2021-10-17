@@ -5,7 +5,6 @@ pub fn new() -> App<'static> {
 		.about("Play MIDI files.")
 		.version(crate_version!())
 		.author(crate_authors!())
-		.setting(AppSettings::UnifiedHelpMessage)
 		.setting(AppSettings::ArgRequiredElseHelp);
 
 	let file = Arg::new("file")
