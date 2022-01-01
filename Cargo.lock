@@ -73,9 +73,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap"
-version = "3.0.0-rc.7"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9468f8012246b0836c6fd11725102b0844254985f2462b6c637d50040ef49df0"
+checksum = "d17bf219fcd37199b9a29e00ba65dfb8cd5b2688b7297ec14ff829c40ac50ca9"
 dependencies = [
  "atty",
  "bitflags",
@@ -478,7 +478,7 @@ checksum = "58893f751c9b0412871a09abd62ecd2a00298c6c83befa223ef98c52aef40cbe"
 
 [[package]]
 name = "plmidi"
-version = "0.9.3"
+version = "0.9.4"
 dependencies = [
  "clap",
  "crossterm",
