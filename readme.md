@@ -2,15 +2,29 @@
 A command line MIDI player.
 
 # Installation
+## Windows: With Scoop
+First add [my bucket](https://github.com/insomnimus/scoop-bucket) to scoop:
+
+`scoop bucket add insomnia https://github.com/inssomnimus/scoop-bucket`
+
+Update scoop:
+
+`scoop update`
+
+Install the app:
+
+`scoop install plmidi`
+
+## Download a pre-built release binary
 Grab a binary for your platform from the [releases page](https://github.com/insomnimus/plmidi/releases).
 
+## BYOB: Build Your Own Binary
 # Feature Flags
 You can choose a different audio backend using one of the following feature flags:
 
 -	`--features=jack`: Use the Jack backend.
 -	`--features=winrt`: Use the WinRT backend.
 
-# Building From Source
 You might want to build from source if, for example you wish to use the jack backend.
 
 You need an up to date rust toolchain installed.
