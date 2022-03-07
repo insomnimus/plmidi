@@ -29,9 +29,9 @@ fn print(s: &str) {
 		stdout.execute(Clear(ClearType::UntilNewLine))?;
 		for (i, ln) in s.lines().filter(|s| !s.is_empty()).enumerate() {
 			if i > 0 {
-				writeln!(&mut stdout)?;
+				writeln!(stdout)?;
 			}
-			write!(&mut stdout, "{}\r", ln)?;
+			write!(stdout, "{}\r", ln)?;
 			stdout.flush()?;
 		}
 		Ok(())

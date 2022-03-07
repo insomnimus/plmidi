@@ -1,11 +1,11 @@
-use clap::{arg, crate_authors, crate_version, App, AppSettings, Arg, ArgSettings};
+use clap::{arg, crate_authors, crate_version, Arg, Command};
 
-pub fn new() -> App<'static> {
-	App::new("plmidi")
+pub fn new() -> Command<'static> {
+	Command::new("plmidi")
 		.about("Play MIDI files.")
 		.version(crate_version!())
 		.author(crate_authors!())
-		.setting(AppSettings::ArgRequiredElseHelp)
+		.arg_required_else_help(true)
 		.args(&[
 			arg!(-d --device <NO> "The MIDI output device number.")
 				.default_value("0")
@@ -22,7 +22,7 @@ pub fn new() -> App<'static> {
 			arg!(-t --transpose [N] "Transpose the track N semi-tones.")
 				.default_value("0")
 				.validator(validate::<i8>("the value must be between -64 and 64."))
-				.setting(ArgSettings::AllowHyphenValues),
+				.allow_hyphen_values(true),
 			arg!(-v --verbose ... "Verbosity level"),
 			Arg::new("file")
 				.required_unless_present("list")
