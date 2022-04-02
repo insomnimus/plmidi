@@ -16,7 +16,7 @@ crossterm = "0.23.0"
 log = "0.4.14"
 midir = "0.7.0"
 midly = "0.5.2"
-nodi = { version = "0.13.2", features = ["hybrid-sleep"], optional = true }
+nodi = { version = "0.13.4", features = ["hybrid-sleep"], optional = true }
 simple_logger = { version = "2.1.0", features = ["stderr"], default-features = false }
 
 [features]
