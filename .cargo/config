@@ -9,9 +9,3 @@ rustflags = [
 	"-Clink-arg=-undefined",
 	"-Clink-arg=dynamic_lookup",
 ]
-
-[target.aarch64-unknown-linux-gnu]
-rustflags = [
-	"-Ctarget-feature=+crt-static",
-	"-Clink-arg=-lm",
-]
