@@ -110,12 +110,9 @@ fn run() -> Result<(), Error> {
 		_ => (),
 	};
 
-	let speed = m.value_of("speed").unwrap().parse::<f32>().unwrap();
-	let transpose = m
-		.value_of("transpose")
-		.map(|s| s.parse::<i8>().unwrap())
-		.unwrap_or(0);
-	let n_device = m.value_of("device").unwrap().parse::<usize>().unwrap();
+	let speed = m.value_of_t_or_exit::<f32>("speed");
+	let transpose = m.value_of_t_or_exit::<i8>("transpose");
+	let n_device = m.value_of_t_or_exit::<usize>("device");
 	let file_name = PathBuf::from(m.value_of("file").unwrap());
 
 	let out = get_midi(n_device)?;

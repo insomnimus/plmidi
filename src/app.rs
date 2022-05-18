@@ -7,12 +7,20 @@ pub fn new() -> Command<'static> {
 		.author(crate_authors!())
 		.arg_required_else_help(true)
 		.args(&[
+			arg!(-v --verbose ... "Verbosity level."),
 			arg!(-d --device <NO> "The MIDI output device number.")
 				.default_value("0")
 				.validator(validate::<usize>(
 					"the value must be an integer greater than or equal to 0",
 				)),
 			arg!(-l --list "List available MIDI output devices."),
+			arg!(-t --transpose [N] "Transpose the track N half-notes.")
+				.default_value("0")
+				.allow_hyphen_values(true)
+				.hide_default_value(true)
+				.validator(validate::<i8>(
+					"the value must be a number between -128 and 128",
+				)),
 			arg!(-x --speed [MODIFIER] "The playback speed. 1.0 is the normal speed.")
 				.default_value("1.0")
 				.validator(|f| match f.parse::<f32>() {
