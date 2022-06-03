@@ -2,7 +2,7 @@
 name = "plmidi"
 description = "Play MIDI files from the command line."
 version = "0.10.0"
-edition = "2018"
+edition = "2021"
 authors = [ "Taylan Gökkaya <insomnimus.dev@gmail.com>" ]
 license = "MIT"
 repository = "https://github.com/insomnimus/plmidi"
@@ -11,12 +11,16 @@ keywords = ["midi", "music", "smf"]
 readme = "readme.md"
 
 [dependencies]
+anyhow = "1.0.57"
 clap = { version = "3.1.18", features = ["cargo", "unicode", "wrap_help"] }
+cpal = "0.13.5"
 crossterm = "0.23.2"
+fluidlite = { version = "0.2.1", features = ["pkg-config"] }
 log = "0.4.17"
 midir = "0.8.0"
 midly = "0.5.2"
 nodi = { version = "0.15.2", features = ["hybrid-sleep"], optional = true }
+parking_lot = "0.12.1"
 simple_logger = { version = "2.1.0", features = ["stderr"], default-features = false }
 
 [features]

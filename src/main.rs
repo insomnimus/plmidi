@@ -1,25 +1,58 @@
 mod app;
+mod fluid;
 
 use std::{
 	convert::TryFrom,
 	fs,
-	io::{self, Write},
+	io::{
+		self,
+		Write,
+	},
 	path::PathBuf,
 	process,
-	sync::mpsc::{self, SyncSender},
+	sync::mpsc::{
+		self,
+		SyncSender,
+	},
 	thread,
 	time::Duration,
 };
 
 use crossterm::{
-	event::{self, Event, KeyCode, KeyModifiers},
-	terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, Clear, ClearType},
+	event::{
+		self,
+		Event,
+		KeyCode,
+		KeyModifiers,
+	},
+	terminal::{
+		disable_raw_mode,
+		enable_raw_mode,
+		is_raw_mode_enabled,
+		Clear,
+		ClearType,
+	},
 	ExecutableCommand,
 };
 use log::Level;
-use midir::{MidiOutput, MidiOutputConnection};
-use midly::{Format, Smf};
-use nodi::{timers::Ticker, Player, Sheet, Timer};
+use midir::{
+	MidiOutput,
+	MidiOutputConnection,
+};
+use midly::{
+	Format,
+	Smf,
+};
+use nodi::{
+	timers::{
+		ControlTicker,
+		Ticker,
+	},
+	Connection,
+	Player,
+	Sheet,
+	Timer,
+};
 
 type Error = Box<dyn ::std::error::Error>;
 
@@ -115,7 +148,6 @@ fn run() -> Result<(), Error> {
 	let n_device = m.value_of_t_or_exit::<usize>("device");
 	let file_name = PathBuf::from(m.value_of("file").unwrap());
 
-	let out = get_midi(n_device)?;
 	let data = fs::read(&file_name)?;
 
 	let Smf { header, tracks } = Smf::parse(&data)?;
@@ -145,9 +177,15 @@ fn run() -> Result<(), Error> {
 	thread::spawn(move || {
 		listen_keys(sender);
 	});
+	fn inner<C: Connection>(con: C, sheet: Sheet, timer: ControlTicker) {
+		let mut player = Player::new(timer, con);
+		player.play_sheet(&sheet);
+	}
 
-	let mut player = Player::new(timer, out);
-	player.play_sheet(&sheet);
+	match m.value_of("fluidsynth") {
+		Some(p) => inner(fluid::Fluid::new(p)?, sheet, timer),
+		None => inner(get_midi(n_device)?, sheet, timer),
+	};
 	Ok(())
 }
 
