@@ -50,19 +50,14 @@ impl Fluid {
 		fl.set_sample_rate(config.sample_rate().0 as f32);
 		let synth = Arc::new(Mutex::new(fl));
 		let fl = Arc::clone(&synth);
-		let n_channels = config.channels() as u32;
 
 		let stream = match config.sample_format() {
-			SampleFormat::U16 => return Err(anyhow!("unsupported sample format")),
-			SampleFormat::I16 => dev.build_output_stream(
+			SampleFormat::I16 | SampleFormat::U16 => dev.build_output_stream(
 				&config.config(),
 				move |data: &mut [i16], _: &OutputCallbackInfo| {
 					let fl = fl.lock();
-					let buf = data.as_mut_ptr();
 
-					let res =
-						unsafe { fl.write_i16(data.len(), buf, 0, n_channels, buf, 1, n_channels) };
-					if let Err(e) = res {
+					if let Err(e) = fl.write(data) {
 						error!("error writing samples: {e}");
 					}
 				},
@@ -73,11 +68,7 @@ impl Fluid {
 				move |data: &mut [f32], _: &OutputCallbackInfo| {
 					let fl = fl.lock();
 
-					// let buf = data.as_mut_ptr();
-
-					let res = fl.write(data);
-					// unsafe { fl.write_f32(data.len(), buf, 0, n_channels, buf, 1, n_channels) };
-					if let Err(e) = res {
+					if let Err(e) = fl.write(data) {
 						error!("error writing samples: {e}");
 					}
 				},

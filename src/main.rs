@@ -202,9 +202,6 @@ fn run() -> Result<()> {
 }
 
 fn listen_keys(sender: SyncSender<()>) {
-	if let Err(e) = enable_raw_mode() {
-		eprintln!("warning: failed to enable raw input mode: {}", e);
-	}
 	print("press the spacebar to play/pause, esc to quit");
 	let mut paused = false;
 	loop {
@@ -227,20 +224,20 @@ fn listen_keys(sender: SyncSender<()>) {
 			_ => (),
 		};
 	}
-	process::exit(if let Err(e) = disable_raw_mode() {
-		eprintln!("warning: failed to disable raw input mode: {}", e);
-		1
-	} else {
-		0
-	});
 }
 
 fn main() {
+	if let Err(e) = enable_raw_mode() {
+		eprintln!("warning: failed to enable raw input mode: {}", e);
+	}
 	if let Err(e) = run() {
 		#[cfg(unix)]
 		eprintln!("error: {e}");
 		#[cfg(not(unix))]
 		eprintln!("error: {e:?}");
+		let _ = disable_raw_mode();
 		process::exit(1);
 	}
+
+	let _ = disable_raw_mode();
 }
