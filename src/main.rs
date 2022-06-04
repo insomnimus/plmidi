@@ -19,10 +19,7 @@ use std::{
 	time::Duration,
 };
 
-use anyhow::{
-	ensure,
-	Result,
-};
+use anyhow::anyhow;
 use crossterm::{
 	event::{
 		self,
@@ -58,6 +55,12 @@ use nodi::{
 	Sheet,
 	Timer,
 };
+
+#[cfg(unix)]
+type Error = Box<dyn std::error::Error>;
+#[cfg(not(unix))]
+type Error = anyhow::Error;
+type Result<T, E = Error> = ::std::result::Result<T, E>;
 
 fn print(s: &str) {
 	fn inner(s: &str) -> io::Result<()> {
@@ -113,16 +116,23 @@ fn list_devices() -> Result<()> {
 	Ok(())
 }
 
-fn get_midi(n: usize) -> Result<MidiOutputConnection> {
+fn get_midi(n: usize) -> Result<MidiOutputConnection, Error> {
+	#![cfg_attr(not(unix), allow(clippy::useless_conversion))]
+	// NOTE: On *NIX, the error this function returns is not Sync so anyhow doesn't
+	// work.
 	let midi_out = MidiOutput::new("nodi")?;
 
 	let out_ports = midi_out.ports();
-	ensure!(!out_ports.is_empty(), "no midi output device detected");
-	ensure!(
-		n < out_ports.len(),
-		"only {} devices detected; run with --list to see them",
-		out_ports.len()
-	);
+	if out_ports.is_empty() {
+		return Err(anyhow!("no midi output device detected").into());
+	}
+	if n >= out_ports.len() {
+		return Err(anyhow!(
+			"only {} devices detected; run with --list to see them",
+			out_ports.len()
+		)
+		.into());
+	}
 
 	let out_port = &out_ports[n];
 	let out = midi_out.connect(out_port, "plmidi")?;
