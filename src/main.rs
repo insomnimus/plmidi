@@ -237,6 +237,9 @@ fn listen_keys(sender: SyncSender<()>) {
 
 fn main() {
 	if let Err(e) = run() {
+		#[cfg(unix)]
+		eprintln!("error: {e}");
+		#[cfg(not(unix))]
 		eprintln!("error: {e:?}");
 		process::exit(1);
 	}
