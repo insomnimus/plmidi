@@ -31,7 +31,7 @@ use parking_lot::Mutex;
 
 pub struct Fluid {
 	synth: Arc<Mutex<Synth>>,
-	stream: Stream,
+	_stream: Stream,
 }
 
 impl Fluid {
@@ -87,7 +87,10 @@ impl Fluid {
 
 		stream.play()?;
 
-		Ok(Self { synth, stream })
+		Ok(Self {
+			synth,
+			_stream: stream,
+		})
 	}
 }
 

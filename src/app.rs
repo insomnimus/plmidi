@@ -13,6 +13,7 @@ pub fn new() -> Command<'static> {
 		.author(crate_authors!())
 		.arg_required_else_help(true)
 		.args(&[
+			#[cfg(feature = "fluidlite")]
 			arg!(-f --fluidsynth [SOUNDFONT] "Use fluidsynth instead of a MIDI out device."),
 			arg!(-v --verbose ... "Verbosity level."),
 			arg!(-d --device [NO] "The MIDI output device number.")

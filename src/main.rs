@@ -1,4 +1,5 @@
 mod app;
+#[cfg(feature = "fluidlite")]
 mod fluid;
 
 use std::{
@@ -18,6 +19,10 @@ use std::{
 	time::Duration,
 };
 
+use anyhow::{
+	ensure,
+	Result,
+};
 use crossterm::{
 	event::{
 		self,
@@ -54,10 +59,8 @@ use nodi::{
 	Timer,
 };
 
-type Error = Box<dyn ::std::error::Error>;
-
 fn print(s: &str) {
-	fn inner(s: &str) -> Result<(), io::Error> {
+	fn inner(s: &str) -> io::Result<()> {
 		let mut stdout = io::stdout();
 		stdout.execute(Clear(ClearType::UntilNewLine))?;
 		for (i, ln) in s.lines().filter(|s| !s.is_empty()).enumerate() {
@@ -87,7 +90,7 @@ fn format_duration(t: Duration) -> String {
 	}
 }
 
-fn list_devices() -> Result<(), Error> {
+fn list_devices() -> Result<()> {
 	let midi_out = MidiOutput::new("nodi")?;
 
 	let out_ports = midi_out.ports();
@@ -110,28 +113,23 @@ fn list_devices() -> Result<(), Error> {
 	Ok(())
 }
 
-fn get_midi(n: usize) -> Result<MidiOutputConnection, Error> {
+fn get_midi(n: usize) -> Result<MidiOutputConnection> {
 	let midi_out = MidiOutput::new("nodi")?;
 
 	let out_ports = midi_out.ports();
-	if out_ports.is_empty() {
-		return Err("no midi output device detected".into());
-	}
-
-	if n >= out_ports.len() {
-		return Err(format!(
-			"only {} MIDI devices detected; run with --list  to see them",
-			out_ports.len()
-		)
-		.into());
-	}
+	ensure!(!out_ports.is_empty(), "no midi output device detected");
+	ensure!(
+		n < out_ports.len(),
+		"only {} devices detected; run with --list to see them",
+		out_ports.len()
+	);
 
 	let out_port = &out_ports[n];
 	let out = midi_out.connect(out_port, "plmidi")?;
 	Ok(out)
 }
 
-fn run() -> Result<(), Error> {
+fn run() -> Result<()> {
 	let m = app::new().get_matches();
 	if m.is_present("list") {
 		return list_devices();
@@ -182,6 +180,10 @@ fn run() -> Result<(), Error> {
 		player.play_sheet(&sheet);
 	}
 
+	#[cfg(not(feature = "fluidlite"))]
+	inner(get_midi(n_device)?, sheet, timer);
+
+	#[cfg(feature = "fluidlite")]
 	match m.value_of("fluidsynth") {
 		Some(p) => inner(fluid::Fluid::new(p)?, sheet, timer),
 		None => inner(get_midi(n_device)?, sheet, timer),
@@ -225,7 +227,7 @@ fn listen_keys(sender: SyncSender<()>) {
 
 fn main() {
 	if let Err(e) = run() {
-		eprintln!("error: {}", e);
-		process::exit(2);
+		eprintln!("error: {e:?}");
+		process::exit(1);
 	}
 }

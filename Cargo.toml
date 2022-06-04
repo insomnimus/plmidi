@@ -1,29 +1,33 @@
 [package]
 name = "plmidi"
 description = "Play MIDI files from the command line."
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
-authors = [ "Taylan Gökkaya <insomnimus.dev@gmail.com>" ]
+authors = [ "Taylan Gökkaya <insomnimus@protonmail.com>" ]
 license = "MIT"
 repository = "https://github.com/insomnimus/plmidi"
 categories = ["command-line-utilities", "multimedia::audio", "multimedia::encoding"]
 keywords = ["midi", "music", "smf"]
 readme = "readme.md"
 
-[dependencies]
-anyhow = "1.0.57"
-clap = { version = "3.1.18", features = ["cargo", "unicode", "wrap_help"] }
-cpal = "0.13.5"
-crossterm = "0.23.2"
-fluidlite = { version = "0.2.1", features = ["pkg-config"] }
-log = "0.4.17"
-midir = "0.8.0"
-midly = "0.5.2"
-nodi = { version = "0.15.2", features = ["hybrid-sleep"], optional = true }
-parking_lot = "0.12.1"
-simple_logger = { version = "2.1.0", features = ["stderr"], default-features = false }
-
 [features]
 default = ["nodi/midir"]
 jack = ["nodi/jack"]
 winrt = ["nodi/winrt"]
+fluid = ["fluidlite/pkg-config", "cpal", "parking_lot"]
+fluid-bundled = ["fluidlite/builtin", "cpal", "parking_lot"]
+
+[dependencies]
+anyhow = "1.0.57"
+clap = { version = "3.1.18", features = ["cargo", "unicode", "wrap_help"] }
+crossterm = "0.23.2"
+log = "0.4.17"
+midir = "0.8.0"
+midly = "0.5.2"
+nodi = { version = "0.15.2", features = ["hybrid-sleep"], optional = true }
+simple_logger = { version = "2.1.0", features = ["stderr"], default-features = false }
+
+# optional dependencies
+cpal = { version = "0.13.5", optional = true }
+fluidlite = { version = "0.2.1", optional = true, features = ["static"] }
+parking_lot = { version = "0.12.1", optional = true }
