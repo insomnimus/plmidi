@@ -20,7 +20,6 @@ use std::{
 	time::Duration,
 };
 
-use anyhow::anyhow;
 use crossterm::{
 	event::{
 		self,
@@ -57,11 +56,7 @@ use nodi::{
 	Timer,
 };
 
-#[cfg(unix)]
-type Error = Box<dyn std::error::Error>;
-#[cfg(not(unix))]
-type Error = anyhow::Error;
-type Result<T, E = Error> = ::std::result::Result<T, E>;
+type Result<T, E = Box<dyn std::error::Error>> = ::std::result::Result<T, E>;
 
 fn print(s: &str) {
 	fn inner(s: &str) -> io::Result<()> {
@@ -118,17 +113,14 @@ fn list_devices() -> Result<()> {
 }
 
 fn get_midi(n: usize) -> Result<MidiOutputConnection> {
-	#![cfg_attr(not(unix), allow(clippy::useless_conversion))]
-	// NOTE: On *NIX, the error this function returns is not Sync so anyhow doesn't
-	// work.
 	let midi_out = MidiOutput::new("nodi")?;
 
 	let out_ports = midi_out.ports();
 	if out_ports.is_empty() {
-		return Err(anyhow!("no midi output device detected").into());
+		return Err("no midi output device detected".into());
 	}
 	if n >= out_ports.len() {
-		return Err(anyhow!(
+		return Err(format!(
 			"only {} devices detected; run with --list to see them",
 			out_ports.len()
 		)
@@ -246,10 +238,7 @@ fn listen_keys(sender: SyncSender<()>, done: Receiver<()>) {
 
 fn main() {
 	if let Err(e) = run() {
-		#[cfg(unix)]
 		eprintln!("error: {e}");
-		#[cfg(not(unix))]
-		eprintln!("error: {e:?}");
 		process::exit(1);
 	}
 }
