@@ -1,22 +1,25 @@
 use std::{
-	path::Path,
+	fmt,
+	path::{
+		Path,
+		PathBuf,
+	},
 	sync::Arc,
 };
 
-use anyhow::{
-	anyhow,
-	Context,
-	Result,
-};
 use cpal::{
 	traits::{
 		DeviceTrait,
 		HostTrait,
 		StreamTrait,
 	},
+	BuildStreamError,
+	DefaultStreamConfigError,
 	OutputCallbackInfo,
+	PlayStreamError,
 	SampleFormat,
 	Stream,
+	StreamConfig,
 };
 use fluidlite::{
 	Settings,
@@ -35,25 +38,30 @@ pub struct Fluid {
 }
 
 impl Fluid {
-	pub fn new<P: AsRef<Path>>(sf: P) -> Result<Self> {
+	pub fn new<P: AsRef<Path>>(sf: P) -> Result<Self, Error> {
 		let fl = Synth::new(Settings::new()?)?;
 		fl.sfload(sf.as_ref(), true)
-			.context("failed to load soundfont")?;
+			.map_err(|error| Error::Soundfont {
+				path: sf.as_ref().into(),
+				error,
+			})?;
 
 		// Initialize the audio stream.
 		let err_fn = |e| error!("error [audio stream]: {e}");
 		let host = cpal::default_host();
-		let dev = host
-			.default_output_device()
-			.ok_or_else(|| anyhow!("no audio output device detected"))?;
-		let config = dev.default_output_config()?;
-		fl.set_sample_rate(config.sample_rate().0 as f32);
+		let dev = host.default_output_device().ok_or(Error::NoOutputDevice)?;
+
+		let def_config = dev
+			.default_output_config()
+			.map_err(Error::DefaultStreamConfig)?;
+		fl.set_sample_rate(def_config.sample_rate().0 as f32);
 		let synth = Arc::new(Mutex::new(fl));
 		let fl = Arc::clone(&synth);
+		let config = def_config.config();
 
-		let stream = match config.sample_format() {
+		let stream = match def_config.sample_format() {
 			SampleFormat::I16 | SampleFormat::U16 => dev.build_output_stream(
-				&config.config(),
+				&config,
 				move |data: &mut [i16], _: &OutputCallbackInfo| {
 					let fl = fl.lock();
 
@@ -64,7 +72,7 @@ impl Fluid {
 				err_fn,
 			),
 			SampleFormat::F32 => dev.build_output_stream(
-				&config.config(),
+				&config,
 				move |data: &mut [f32], _: &OutputCallbackInfo| {
 					let fl = fl.lock();
 
@@ -74,9 +82,15 @@ impl Fluid {
 				},
 				err_fn,
 			),
-		}?;
+		}
+		.map_err(|error| Error::BuildStream {
+			config: config.clone(),
+			error,
+		})?;
 
-		stream.play()?;
+		stream
+			.play()
+			.map_err(|error| Error::PlayStream { config, error })?;
 
 		Ok(Self {
 			synth,
@@ -103,6 +117,51 @@ impl Connection for Fluid {
 			M::Controller { controller, value } => {
 				fl.cc(c, controller.as_int() as _, value.as_int() as _)
 			}
+		}
+	}
+}
+
+#[derive(Debug)]
+pub enum Error {
+	Soundfont {
+		path: PathBuf,
+		error: fluidlite::Error,
+	},
+	Fluidlite(fluidlite::Error),
+	NoOutputDevice,
+	DefaultStreamConfig(DefaultStreamConfigError),
+	BuildStream {
+		config: StreamConfig,
+		error: BuildStreamError,
+	},
+	PlayStream {
+		config: StreamConfig,
+		error: PlayStreamError,
+	},
+}
+
+impl std::error::Error for Error {}
+
+impl From<fluidlite::Error> for Error {
+	fn from(e: fluidlite::Error) -> Self {
+		Self::Fluidlite(e)
+	}
+}
+
+impl fmt::Display for Error {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			Self::Soundfont { path, error } => write!(
+				f,
+				"failed loading the soundfont {} ({})",
+				path.display(),
+				error
+			),
+			Self::Fluidlite(e) => e.fmt(f),
+			Self::NoOutputDevice => f.write_str("no audio output device detected"),
+			Self::DefaultStreamConfig(e) => e.fmt(f),
+			Self::BuildStream { error, .. } => error.fmt(f),
+			Self::PlayStream { error, .. } => error.fmt(f),
 		}
 	}
 }

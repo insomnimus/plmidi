@@ -13,6 +13,7 @@ use std::{
 	process,
 	sync::mpsc::{
 		self,
+		Receiver,
 		SyncSender,
 	},
 	thread,
@@ -116,7 +117,7 @@ fn list_devices() -> Result<()> {
 	Ok(())
 }
 
-fn get_midi(n: usize) -> Result<MidiOutputConnection, Error> {
+fn get_midi(n: usize) -> Result<MidiOutputConnection> {
 	#![cfg_attr(not(unix), allow(clippy::useless_conversion))]
 	// NOTE: On *NIX, the error this function returns is not Sync so anyhow doesn't
 	// work.
@@ -182,9 +183,9 @@ fn run() -> Result<()> {
 	);
 
 	let timer = timer.to_control(receiver);
-	thread::spawn(move || {
-		listen_keys(sender);
-	});
+	let (tx_done, rx_done) = mpsc::sync_channel(0);
+	thread::spawn(move || listen_keys(sender, rx_done));
+
 	fn inner<C: Connection>(con: C, sheet: Sheet, timer: ControlTicker) {
 		let mut player = Player::new(timer, con);
 		player.play_sheet(&sheet);
@@ -198,13 +199,27 @@ fn run() -> Result<()> {
 		Some(p) => inner(fluid::Fluid::new(p)?, sheet, timer),
 		None => inner(get_midi(n_device)?, sheet, timer),
 	};
+
+	let _ = tx_done.send(());
+	// Give the thread time to disable raw mode.
+	thread::sleep(Duration::from_millis(70));
 	Ok(())
 }
 
-fn listen_keys(sender: SyncSender<()>) {
-	print("press the spacebar to play/pause, esc to quit");
+fn listen_keys(sender: SyncSender<()>, done: Receiver<()>) {
+	if let Err(e) = enable_raw_mode() {
+		eprintln!("warning: failed to enable raw mode; hotkeys may not work properly: {e}");
+	} else {
+		print("press the spacebar to play/pause, ctrl-c to quit");
+	}
+
 	let mut paused = false;
-	loop {
+	while let Err(mpsc::TryRecvError::Empty) = done.try_recv() {
+		match event::poll(Duration::from_millis(0)) {
+			Err(_) => break,
+			Ok(false) => continue,
+			Ok(true) => (),
+		}
 		let k = match event::read() {
 			Ok(Event::Key(k)) => k,
 			_ => continue,
@@ -224,20 +239,17 @@ fn listen_keys(sender: SyncSender<()>) {
 			_ => (),
 		};
 	}
+
+	let _ = disable_raw_mode();
+	process::exit(0);
 }
 
 fn main() {
-	if let Err(e) = enable_raw_mode() {
-		eprintln!("warning: failed to enable raw input mode: {}", e);
-	}
 	if let Err(e) = run() {
 		#[cfg(unix)]
 		eprintln!("error: {e}");
 		#[cfg(not(unix))]
 		eprintln!("error: {e:?}");
-		let _ = disable_raw_mode();
 		process::exit(1);
 	}
-
-	let _ = disable_raw_mode();
 }
