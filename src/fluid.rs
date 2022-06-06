@@ -117,11 +117,9 @@ impl Connection for Fluid {
 			}
 		};
 		if let Err(e) = res {
-			error!("{e}");
-			false
-		} else {
-			true
+			log::debug!(target: "midi_event", "{e}");
 		}
+		true
 	}
 }
 
