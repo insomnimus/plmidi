@@ -6,6 +6,15 @@ use clap::{
 	Command,
 };
 
+#[cfg(feature = "fluidlite")]
+const DEFAULT_SOUNDFONT: &str = {
+	if cfg!(windows) {
+		r"C:\soundfonts\default.sf2"
+	} else {
+		"/usr/share/soundfonts/default.sf2"
+	}
+};
+
 pub fn new() -> Command<'static> {
 	Command::new("plmidi")
 		.about("Play MIDI files.")
@@ -14,7 +23,9 @@ pub fn new() -> Command<'static> {
 		.arg_required_else_help(true)
 		.args(&[
 			#[cfg(feature = "fluidlite")]
-			arg!(-f --fluidsynth [SOUNDFONT] "Use fluidsynth instead of a MIDI out device."),
+			arg!(-f --fluidsynth [SOUNDFONT] "Use fluidsynth instead of a MIDI out device.")
+				.visible_alias("soundfont")
+				.default_missing_value(DEFAULT_SOUNDFONT),
 			arg!(-v --verbose ... "Verbosity level."),
 			arg!(-d --device [NO] "The MIDI output device number.")
 				.default_value("0")

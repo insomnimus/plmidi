@@ -66,7 +66,7 @@ fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
 		_ => Level::Debug,
 	};
 
-	#[cfg(feature = "fluid")]
+	#[cfg(feature = "fluidlite")]
 	{
 		use fluidlite::LogLevel;
 		struct L;
