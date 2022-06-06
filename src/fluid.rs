@@ -100,14 +100,12 @@ impl Fluid {
 }
 
 impl Connection for Fluid {
-	type Error = fluidlite::Error;
-
-	fn play(&mut self, msg: &MidiEvent) -> Result<(), Self::Error> {
-		use midly::MidiMessage as M;
+	fn play(&mut self, msg: &MidiEvent) -> bool {
+		use nodi::midly::MidiMessage as M;
 
 		let fl = self.synth.lock();
 		let c = msg.channel.as_int() as u32;
-		match msg.message {
+		let res = match msg.message {
 			M::NoteOff { key, .. } => fl.note_off(c, key.as_int() as _),
 			M::NoteOn { key, vel } => fl.note_on(c, key.as_int() as _, vel.as_int() as _),
 			M::ProgramChange { program } => fl.program_change(c, program.as_int() as _),
@@ -117,6 +115,12 @@ impl Connection for Fluid {
 			M::Controller { controller, value } => {
 				fl.cc(c, controller.as_int() as _, value.as_int() as _)
 			}
+		};
+		if let Err(e) = res {
+			error!("{e}");
+			false
+		} else {
+			true
 		}
 	}
 }

@@ -25,12 +25,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.57"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08f9b8508dccb7687a1d6c4ce66b2b0ecef467c94667de27d8d7fe1f8d2a9cdc"
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -150,6 +144,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a37c35f1112dad5e6e0b1adaff798507497a18fceeb30cceb3bae7d1427b9213"
 dependencies = [
  "os_str_bytes",
+]
+
+[[package]]
+name = "colored"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "winapi",
 ]
 
 [[package]]
@@ -685,11 +690,10 @@ dependencies = [
 
 [[package]]
 name = "nodi"
-version = "0.15.2"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "138a6236f78fea31c2af22061426ca3190bccfaf8b0a76106b70c6a2d204c85e"
+checksum = "9d35cdab28542f029fde05ac8217911434b017bdb83c92998865babbac446b24"
 dependencies = [
- "log",
  "midir",
  "midly",
 ]
@@ -846,16 +850,14 @@ checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
 
 [[package]]
 name = "plmidi"
-version = "0.11.3"
+version = "0.11.7"
 dependencies = [
- "anyhow",
  "clap",
  "cpal",
  "crossterm",
  "fluidlite",
  "log",
  "midir",
- "midly",
  "nodi",
  "parking_lot 0.12.1",
  "simple_logger",
@@ -1007,6 +1009,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c75a9723083573ace81ad0cdfc50b858aa3c366c48636edb4109d73122a0c0ea"
 dependencies = [
  "atty",
+ "colored",
  "log",
  "winapi",
 ]

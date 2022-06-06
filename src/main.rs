@@ -41,11 +41,11 @@ use midir::{
 	MidiOutput,
 	MidiOutputConnection,
 };
-use midly::{
-	Format,
-	Smf,
-};
 use nodi::{
+	midly::{
+		Format,
+		Smf,
+	},
 	timers::{
 		ControlTicker,
 		Ticker,
@@ -57,6 +57,34 @@ use nodi::{
 };
 
 type Result<T, E = Box<dyn std::error::Error>> = ::std::result::Result<T, E>;
+
+fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
+	let log = match n {
+		0 => Level::Error,
+		1 => Level::Warn,
+		2 => Level::Info,
+		_ => Level::Debug,
+	};
+
+	#[cfg(feature = "fluid")]
+	{
+		use fluidlite::LogLevel;
+		struct L;
+		impl fluidlite::Logger for L {
+			fn log(&mut self, level: LogLevel, msg: &str) {
+				match level {
+					LogLevel::Error | LogLevel::Panic => log::error!(target: "fluidsynth", "{msg}"),
+					LogLevel::Warning => log::warn!(target: "fluidsynth", "{msg}"),
+					LogLevel::Info => log::info!(target: "fluidsynth", "{msg}"),
+					_ => log::debug!(target: "fluidsynth", "{msg}"),
+				}
+			}
+		}
+		fluidlite::Log::set(&LogLevel::DEBUG, L);
+	}
+	simple_logger::init_with_level(log)?;
+	Ok(())
+}
 
 fn print(s: &str) {
 	fn inner(s: &str) -> io::Result<()> {
@@ -138,11 +166,7 @@ fn run() -> Result<()> {
 		return list_devices();
 	}
 
-	match m.occurrences_of("verbose") {
-		1 => simple_logger::init_with_level(Level::Info)?,
-		2 => simple_logger::init_with_level(Level::Debug)?,
-		_ => (),
-	};
+	init_logger(m.occurrences_of("verbose"))?;
 
 	let speed = m.value_of_t_or_exit::<f32>("speed");
 	let transpose = m.value_of_t_or_exit::<i8>("transpose");
@@ -180,7 +204,7 @@ fn run() -> Result<()> {
 
 	fn inner<C: Connection>(con: C, sheet: Sheet, timer: ControlTicker) {
 		let mut player = Player::new(timer, con);
-		player.play_sheet(&sheet);
+		player.play(&sheet);
 	}
 
 	#[cfg(not(feature = "fluidlite"))]
