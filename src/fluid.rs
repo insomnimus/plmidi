@@ -100,7 +100,7 @@ impl Fluid {
 }
 
 impl Connection for Fluid {
-	fn play(&mut self, msg: &MidiEvent) -> bool {
+	fn play(&mut self, msg: MidiEvent) -> bool {
 		use nodi::midly::MidiMessage as M;
 
 		let fl = self.synth.lock();

@@ -1,7 +1,7 @@
 [package]
 name = "plmidi"
 description = "Play MIDI files from the command line."
-version = "0.11.9"
+version = "0.12.0"
 edition = "2021"
 authors = [ "Taylan Gökkaya <insomnimus@protonmail.com>" ]
 license = "MIT"
@@ -18,14 +18,16 @@ fluid = ["fluidlite/pkg-config", "cpal", "parking_lot"]
 fluid-bundled = ["fluidlite/builtin", "cpal", "parking_lot"]
 
 [dependencies]
-clap = { version = "3.1.18", features = ["cargo", "unicode", "wrap_help"] }
-crossterm = "0.23.2"
-log = "0.4.17"
-midir = "0.8.0"
-nodi = { version = "0.16.0", features = ["hybrid-sleep", "midir"] }
-simple_logger = { version = "2.1.0", default-features = false, features = ["stderr", "colored"] }
-
-# optional dependencies
+# Optional dependencies
 cpal = { version = "0.13.5", optional = true }
 fluidlite = { version = "0.2.1", optional = true, features = ["static"] }
 parking_lot = { version = "0.12.1", optional = true }
+
+# Required dependencies
+clap = { version = "3.1.18", features = ["cargo", "unicode", "wrap_help"] }
+crossterm = { version = "0.23.2", features = ["event-stream"] }
+futures = { version = "0.3.21", features = ["executor"] }
+log = "0.4.17"
+midir = "0.8.0"
+nodi = { version = "0.18.1", features = ["hybrid-sleep", "midir"] }
+simple_logger = { version = "2.1.0", default-features = false, features = ["stderr", "colored"] }

@@ -1,9 +1,9 @@
 mod app;
 #[cfg(feature = "fluidlite")]
 mod fluid;
+mod timer;
 
 use std::{
-	convert::TryFrom,
 	fs,
 	io::{
 		self,
@@ -11,19 +11,14 @@ use std::{
 	},
 	path::PathBuf,
 	process,
-	sync::mpsc::{
-		self,
-		Receiver,
-		SyncSender,
-	},
 	thread,
 	time::Duration,
 };
 
 use crossterm::{
 	event::{
-		self,
 		Event,
+		EventStream,
 		KeyCode,
 		KeyModifiers,
 	},
@@ -36,7 +31,20 @@ use crossterm::{
 	},
 	ExecutableCommand,
 };
-use log::Level;
+use futures::{
+	channel::mpsc::{
+		self,
+		Receiver,
+		Sender,
+	},
+	executor::block_on,
+	prelude::*,
+	select,
+};
+use log::{
+	error,
+	Level,
+};
 use midir::{
 	MidiOutput,
 	MidiOutputConnection,
@@ -45,16 +53,15 @@ use nodi::{
 	midly::{
 		Format,
 		Smf,
-	},
-	timers::{
-		ControlTicker,
-		Ticker,
+		Timing,
 	},
 	Connection,
 	Player,
 	Sheet,
 	Timer,
 };
+
+use self::timer::Pausable;
 
 type Result<T, E = Box<dyn std::error::Error>> = ::std::result::Result<T, E>;
 
@@ -176,9 +183,11 @@ fn run() -> Result<()> {
 	let data = fs::read(&file_name)?;
 
 	let Smf { header, tracks } = Smf::parse(&data)?;
-	let (sender, receiver) = mpsc::sync_channel(1);
-
-	let mut timer = Ticker::try_from(header.timing)?;
+	let (sender, receiver) = mpsc::channel(1);
+	let mut timer = match &header.timing {
+		Timing::Metrical(n) => Pausable::new(n.as_int(), receiver),
+		_ => return Err(nodi::timers::TimeFormatError.into()),
+	};
 	timer.speed = speed;
 
 	let mut sheet = match header.format {
@@ -192,17 +201,15 @@ fn run() -> Result<()> {
 		"Playing {}",
 		&file_name.file_name().unwrap_or_default().to_string_lossy()
 	);
-	let mut t = timer;
 	println!(
 		"Total duration: {}",
-		format_duration(t.duration(&sheet[..]))
+		format_duration(timer.duration(&sheet))
 	);
 
-	let timer = timer.to_control(receiver);
-	let (tx_done, rx_done) = mpsc::sync_channel(0);
-	thread::spawn(move || listen_keys(sender, rx_done));
+	let (mut tx_done, rx_done) = mpsc::channel(0);
+	let listen = thread::spawn(move || block_on(async move { listen_keys(sender, rx_done).await }));
 
-	fn inner<C: Connection>(con: C, sheet: Sheet, timer: ControlTicker) {
+	fn inner<C: Connection>(con: C, sheet: Sheet, timer: Pausable) {
 		let mut player = Player::new(timer, con);
 		player.play(&sheet);
 	}
@@ -216,13 +223,15 @@ fn run() -> Result<()> {
 		None => inner(get_midi(n_device)?, sheet, timer),
 	};
 
-	let _ = tx_done.send(());
+	let _ = block_on(tx_done.send(()));
 	// Give the thread time to disable raw mode.
-	thread::sleep(Duration::from_millis(70));
+	// thread::sleep(Duration::from_millis(70));
+	let _ = block_on(tx_done.send(()));
+	let _ = listen.join();
 	Ok(())
 }
 
-fn listen_keys(sender: SyncSender<()>, done: Receiver<()>) {
+async fn listen_keys(mut sender: Sender<()>, mut done: Receiver<()>) {
 	if let Err(e) = enable_raw_mode() {
 		eprintln!("warning: failed to enable raw mode; hotkeys may not work properly: {e}");
 	} else {
@@ -230,30 +239,34 @@ fn listen_keys(sender: SyncSender<()>, done: Receiver<()>) {
 	}
 
 	let mut paused = false;
-	while let Err(mpsc::TryRecvError::Empty) = done.try_recv() {
-		match event::poll(Duration::from_millis(0)) {
-			Err(_) => break,
-			Ok(false) => continue,
-			Ok(true) => (),
-		}
-		let k = match event::read() {
-			Ok(Event::Key(k)) => k,
-			_ => continue,
+	let mut events = EventStream::new()
+		.take_while(|x| std::future::ready(x.is_ok()))
+		.fuse();
+
+	loop {
+		let res = select! {
+			_ = done.next() => break,
+			e = events.next() => e,
 		};
-		match k.code {
-			KeyCode::Esc => break,
-			KeyCode::Char('c') if k.modifiers == KeyModifiers::CONTROL => break,
-			KeyCode::Char(' ') => {
-				sender.send(()).unwrap();
-				if paused {
-					print("unpaused");
-				} else {
-					print("paused");
+		match res {
+			None => break,
+			Some(Err(e)) => error!("input error: {e}"),
+			Some(Ok(Event::Key(k))) => match k.code {
+				KeyCode::Esc => break,
+				KeyCode::Char('c' | 'd' | 'q') if k.modifiers == KeyModifiers::CONTROL => break,
+				KeyCode::Char(' ') => {
+					sender.send(()).await.unwrap();
+					if paused {
+						print("unpaused");
+					} else {
+						print("paused");
+					}
+					paused = !paused;
 				}
-				paused = !paused;
-			}
+				_ => (),
+			},
 			_ => (),
-		};
+		}
 	}
 
 	let _ = disable_raw_mode();
