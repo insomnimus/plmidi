@@ -27,10 +27,56 @@ use fluidlite::{
 };
 use log::error;
 use nodi::{
+	midly::live::SystemRealtime,
 	Connection,
 	MidiEvent,
 };
 use parking_lot::Mutex;
+
+#[derive(Debug)]
+pub enum Error {
+	Soundfont {
+		path: PathBuf,
+		error: fluidlite::Error,
+	},
+	Fluidlite(fluidlite::Error),
+	NoOutputDevice,
+	DefaultStreamConfig(DefaultStreamConfigError),
+	BuildStream {
+		config: StreamConfig,
+		error: BuildStreamError,
+	},
+	PlayStream {
+		config: StreamConfig,
+		error: PlayStreamError,
+	},
+}
+
+impl std::error::Error for Error {}
+
+impl From<fluidlite::Error> for Error {
+	fn from(e: fluidlite::Error) -> Self {
+		Self::Fluidlite(e)
+	}
+}
+
+impl fmt::Display for Error {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			Self::Soundfont { path, error } => write!(
+				f,
+				"failed loading the soundfont {} ({})",
+				path.display(),
+				error
+			),
+			Self::Fluidlite(e) => e.fmt(f),
+			Self::NoOutputDevice => f.write_str("no audio output device detected"),
+			Self::DefaultStreamConfig(e) => e.fmt(f),
+			Self::BuildStream { error, .. } => error.fmt(f),
+			Self::PlayStream { error, .. } => error.fmt(f),
+		}
+	}
+}
 
 pub struct Fluid {
 	synth: Arc<Mutex<Synth>>,
@@ -121,49 +167,12 @@ impl Connection for Fluid {
 		}
 		true
 	}
-}
 
-#[derive(Debug)]
-pub enum Error {
-	Soundfont {
-		path: PathBuf,
-		error: fluidlite::Error,
-	},
-	Fluidlite(fluidlite::Error),
-	NoOutputDevice,
-	DefaultStreamConfig(DefaultStreamConfigError),
-	BuildStream {
-		config: StreamConfig,
-		error: BuildStreamError,
-	},
-	PlayStream {
-		config: StreamConfig,
-		error: PlayStreamError,
-	},
-}
-
-impl std::error::Error for Error {}
-
-impl From<fluidlite::Error> for Error {
-	fn from(e: fluidlite::Error) -> Self {
-		Self::Fluidlite(e)
-	}
-}
-
-impl fmt::Display for Error {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		match self {
-			Self::Soundfont { path, error } => write!(
-				f,
-				"failed loading the soundfont {} ({})",
-				path.display(),
-				error
-			),
-			Self::Fluidlite(e) => e.fmt(f),
-			Self::NoOutputDevice => f.write_str("no audio output device detected"),
-			Self::DefaultStreamConfig(e) => e.fmt(f),
-			Self::BuildStream { error, .. } => error.fmt(f),
-			Self::PlayStream { error, .. } => error.fmt(f),
+	fn send_sys_rt(&mut self, msg: SystemRealtime) {
+		if msg == SystemRealtime::Reset {
+			if let Err(e) = self.synth.lock().system_reset() {
+				log::error!(target: "midi_event", "failed to reset: {e}");
+			}
 		}
 	}
 }

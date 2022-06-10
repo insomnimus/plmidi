@@ -2,7 +2,6 @@ use clap::{
 	arg,
 	crate_authors,
 	crate_version,
-	Arg,
 	Command,
 };
 
@@ -26,6 +25,8 @@ pub fn new() -> Command<'static> {
 			arg!(-f --fluidsynth [SOUNDFONT] "Use fluidsynth instead of a MIDI out device.")
 				.visible_alias("soundfont")
 				.default_missing_value(DEFAULT_SOUNDFONT),
+			arg!(-s --shuffle "Shuffle given tracks."),
+			arg!(-r --repeat "Repeat playback."),
 			arg!(-v --verbose ... "Verbosity level."),
 			arg!(-d --device [NO] "The MIDI output device number.")
 				.default_value("0")
@@ -43,9 +44,7 @@ pub fn new() -> Command<'static> {
 				.default_value("0")
 				.validator(validate::<i8>("the value must be between -64 and 64."))
 				.allow_hyphen_values(true),
-			Arg::new("file")
-				.required_unless_present("list")
-				.help("A MIDI file (.mid) to be played."),
+			arg!([file] ... "MIDI (*.mid) files to play.").required_unless_present("list"),
 		])
 }
 

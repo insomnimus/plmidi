@@ -1,15 +1,14 @@
 mod app;
 #[cfg(feature = "fluidlite")]
 mod fluid;
-mod timer;
+mod playback;
+mod track;
 
 use std::{
-	fs,
 	io::{
 		self,
 		Write,
 	},
-	path::PathBuf,
 	process,
 	thread,
 	time::Duration,
@@ -49,21 +48,22 @@ use midir::{
 	MidiOutput,
 	MidiOutputConnection,
 };
-use nodi::{
-	midly::{
-		Format,
-		Smf,
-		Timing,
-	},
-	Connection,
-	Player,
-	Sheet,
-	Timer,
-};
 
-use self::timer::Pausable;
+use self::track::Track;
 
 type Result<T, E = Box<dyn std::error::Error>> = ::std::result::Result<T, E>;
+
+enum Command {
+	Pause,
+	Next,
+	Prev,
+}
+
+#[cfg(feature = "fluidlite")]
+enum Either<A, B> {
+	Left(A),
+	Right(B),
+}
 
 fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
 	let log = match n {
@@ -93,7 +93,7 @@ fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
 	Ok(())
 }
 
-fn print(s: &str) {
+fn _print(s: &str) {
 	fn inner(s: &str) -> io::Result<()> {
 		let mut stdout = io::stdout();
 		stdout.execute(Clear(ClearType::UntilNewLine))?;
@@ -110,17 +110,6 @@ fn print(s: &str) {
 		let _ = inner(s);
 	} else {
 		println!("{}", s);
-	}
-}
-
-fn format_duration(t: Duration) -> String {
-	let secs = t.as_secs();
-	let mins = secs / 60;
-	let secs = secs % 60;
-	if mins > 0 {
-		format!("{}m{}s", mins, secs)
-	} else {
-		format!("{}s", secs)
 	}
 }
 
@@ -176,97 +165,96 @@ fn run() -> Result<()> {
 	init_logger(m.occurrences_of("verbose"))?;
 
 	let speed = m.value_of_t_or_exit::<f32>("speed");
+	let repeat = m.is_present("repeat");
+	let shuffle = m.is_present("shuffle");
 	let transpose = m.value_of_t_or_exit::<i8>("transpose");
+
 	let n_device = m.value_of_t_or_exit::<usize>("device");
-	let file_name = PathBuf::from(m.value_of("file").unwrap());
+	#[cfg(not(feature = "fluidlite"))]
+	let con = get_midi(n_device)?;
 
-	let data = fs::read(&file_name)?;
+	#[cfg(feature = "fluidlite")]
+	let con = match m.value_of("fluidsynth") {
+		Some(p) => Either::Left(fluid::Fluid::new(p)?),
+		None => Either::Right(get_midi(n_device)?),
+	};
 
-	let Smf { header, tracks } = Smf::parse(&data)?;
+	let mut tracks = m
+		.values_of("file")
+		.into_iter()
+		.flatten()
+		.map(Track::new)
+		.collect::<Result<Vec<_>, _>>()?;
+
+	let mut total_duration = Duration::from_secs(0);
+	for t in &mut tracks {
+		total_duration += t.duration;
+		t.sheet.transpose(transpose, false);
+	}
+	if shuffle {
+		todo!();
+	}
+
 	let (sender, receiver) = mpsc::channel(1);
-	let mut timer = match &header.timing {
-		Timing::Metrical(n) => Pausable::new(n.as_int(), receiver),
-		_ => return Err(nodi::timers::TimeFormatError.into()),
-	};
-	timer.speed = speed;
-
-	let mut sheet = match header.format {
-		Format::SingleTrack | Format::Sequential => Sheet::sequential(&tracks),
-		Format::Parallel => Sheet::parallel(&tracks),
-	};
-
-	sheet.transpose(transpose, false);
-
-	println!(
-		"Playing {}",
-		&file_name.file_name().unwrap_or_default().to_string_lossy()
-	);
-	println!(
-		"Total duration: {}",
-		format_duration(timer.duration(&sheet))
-	);
 
 	let (mut tx_done, rx_done) = mpsc::channel(0);
 	let listen = thread::spawn(move || block_on(async move { listen_keys(sender, rx_done).await }));
-
-	fn inner<C: Connection>(con: C, sheet: Sheet, timer: Pausable) {
-		let mut player = Player::new(timer, con);
-		player.play(&sheet);
+	#[cfg(not(feature = "fluidlite"))]
+	playback::play(con, &tracks, receiver, repeat, speed);
+	#[cfg(feature = "fluidlite")]
+	match con {
+		Either::Left(con) => playback::play(con, &tracks, receiver, repeat, speed),
+		Either::Right(con) => playback::play(con, &tracks, receiver, repeat, speed),
 	}
 
-	#[cfg(not(feature = "fluidlite"))]
-	inner(get_midi(n_device)?, sheet, timer);
-
-	#[cfg(feature = "fluidlite")]
-	match m.value_of("fluidsynth") {
-		Some(p) => inner(fluid::Fluid::new(p)?, sheet, timer),
-		None => inner(get_midi(n_device)?, sheet, timer),
-	};
-
-	let _ = block_on(tx_done.send(()));
-	// Give the thread time to disable raw mode.
-	// thread::sleep(Duration::from_millis(70));
 	let _ = block_on(tx_done.send(()));
 	let _ = listen.join();
 	Ok(())
 }
 
-async fn listen_keys(mut sender: Sender<()>, mut done: Receiver<()>) {
+async fn listen_keys(mut sender: Sender<Command>, done: Receiver<()>) {
 	if let Err(e) = enable_raw_mode() {
 		eprintln!("warning: failed to enable raw mode; hotkeys may not work properly: {e}");
-	} else {
-		print("press the spacebar to play/pause, ctrl-c to quit");
 	}
 
-	let mut paused = false;
 	let mut events = EventStream::new()
 		.take_while(|x| std::future::ready(x.is_ok()))
 		.fuse();
+	let mut done = done.fuse();
 
-	loop {
+	let received_done = loop {
 		let res = select! {
-			_ = done.next() => break,
+			_ = done.next() => break true,
 			e = events.next() => e,
 		};
-		match res {
-			None => break,
-			Some(Err(e)) => error!("input error: {e}"),
+		let should_break = match res {
+			None => true,
+			Some(Err(e)) => {
+				error!("input error: {e}");
+				true
+			}
 			Some(Ok(Event::Key(k))) => match k.code {
-				KeyCode::Esc => break,
-				KeyCode::Char('c' | 'd' | 'q') if k.modifiers == KeyModifiers::CONTROL => break,
-				KeyCode::Char(' ') => {
-					sender.send(()).await.unwrap();
-					if paused {
-						print("unpaused");
-					} else {
-						print("paused");
-					}
-					paused = !paused;
+				KeyCode::Esc => true,
+				KeyCode::Char('c' | 'd' | 'q') if k.modifiers == KeyModifiers::CONTROL => true,
+				KeyCode::Left if k.modifiers == KeyModifiers::CONTROL => {
+					sender.send(Command::Prev).await.is_err()
 				}
-				_ => (),
+				KeyCode::Right if k.modifiers == KeyModifiers::CONTROL => {
+					sender.send(Command::Next).await.is_err()
+				}
+				KeyCode::Char(' ') => sender.send(Command::Pause).await.is_err(),
+				_ => false,
 			},
-			_ => (),
+			_ => false,
+		};
+		if should_break {
+			break false;
 		}
+	};
+
+	if !received_done {
+		drop(sender);
+		let _ = done.next();
 	}
 
 	let _ = disable_raw_mode();
