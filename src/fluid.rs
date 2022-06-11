@@ -19,7 +19,6 @@ use cpal::{
 	PlayStreamError,
 	SampleFormat,
 	Stream,
-	StreamConfig,
 };
 use fluidlite::{
 	Settings,
@@ -42,14 +41,8 @@ pub enum Error {
 	Fluidlite(fluidlite::Error),
 	NoOutputDevice,
 	DefaultStreamConfig(DefaultStreamConfigError),
-	BuildStream {
-		config: StreamConfig,
-		error: BuildStreamError,
-	},
-	PlayStream {
-		config: StreamConfig,
-		error: PlayStreamError,
-	},
+	BuildStream(BuildStreamError),
+	PlayStream(PlayStreamError),
 }
 
 impl std::error::Error for Error {}
@@ -72,8 +65,8 @@ impl fmt::Display for Error {
 			Self::Fluidlite(e) => e.fmt(f),
 			Self::NoOutputDevice => f.write_str("no audio output device detected"),
 			Self::DefaultStreamConfig(e) => e.fmt(f),
-			Self::BuildStream { error, .. } => error.fmt(f),
-			Self::PlayStream { error, .. } => error.fmt(f),
+			Self::BuildStream(e) => e.fmt(f),
+			Self::PlayStream(e) => e.fmt(f),
 		}
 	}
 }
@@ -97,15 +90,16 @@ impl Fluid {
 		let host = cpal::default_host();
 		let dev = host.default_output_device().ok_or(Error::NoOutputDevice)?;
 
-		let def_config = dev
+		let config = dev
 			.default_output_config()
 			.map_err(Error::DefaultStreamConfig)?;
-		fl.set_sample_rate(def_config.sample_rate().0 as f32);
+		fl.set_sample_rate(config.sample_rate().0 as f32);
 		let synth = Arc::new(Mutex::new(fl));
 		let fl = Arc::clone(&synth);
-		let config = def_config.config();
+		let format = config.sample_format();
+		let config = config.config();
 
-		let stream = match def_config.sample_format() {
+		let stream = match format {
 			SampleFormat::I16 | SampleFormat::U16 => dev.build_output_stream(
 				&config,
 				move |data: &mut [i16], _: &OutputCallbackInfo| {
@@ -129,14 +123,9 @@ impl Fluid {
 				err_fn,
 			),
 		}
-		.map_err(|error| Error::BuildStream {
-			config: config.clone(),
-			error,
-		})?;
+		.map_err(Error::BuildStream)?;
 
-		stream
-			.play()
-			.map_err(|error| Error::PlayStream { config, error })?;
+		stream.play().map_err(Error::PlayStream)?;
 
 		Ok(Self {
 			synth,

@@ -1,3 +1,4 @@
+use cfg_if::cfg_if;
 use clap::{
 	arg,
 	crate_authors,
@@ -15,25 +16,23 @@ const DEFAULT_SOUNDFONT: &str = {
 };
 
 pub fn new() -> Command<'static> {
-	Command::new("plmidi")
+	cfg_if! {
+		if #[cfg(feature = "midir")] {
+			let files = arg!([file] ... "MIDI (*.mid) files to play.").required_unless_present("list");
+		} else {
+			let files = arg!(<file> ... "MIDI (*.mid) files to play.");
+		}
+	}
+
+	let c = Command::new("plmidi")
 		.about("Play MIDI files.")
 		.version(crate_version!())
 		.author(crate_authors!())
 		.arg_required_else_help(true)
 		.args(&[
-			#[cfg(feature = "fluidlite")]
-			arg!(-f --fluidsynth [SOUNDFONT] "Use fluidsynth instead of a MIDI out device.")
-				.visible_alias("soundfont")
-				.default_missing_value(DEFAULT_SOUNDFONT),
 			arg!(-s --shuffle "Shuffle given tracks."),
 			arg!(-r --repeat "Repeat playback."),
 			arg!(-v --verbose ... "Verbosity level."),
-			arg!(-d --device [NO] "The MIDI output device number.")
-				.default_value("0")
-				.validator(validate::<usize>(
-					"the value must be an integer greater than or equal to 0",
-				)),
-			arg!(-l --list "List available MIDI output devices."),
 			arg!(-x --speed [MODIFIER] "The playback speed. 1.0 is the normal speed.")
 				.default_value("1.0")
 				.validator(|f| match f.parse::<f32>() {
@@ -44,8 +43,34 @@ pub fn new() -> Command<'static> {
 				.default_value("0")
 				.validator(validate::<i8>("the value must be between -64 and 64."))
 				.allow_hyphen_values(true),
-			arg!([file] ... "MIDI (*.mid) files to play.").required_unless_present("list"),
-		])
+			files,
+		]);
+
+	#[cfg(feature = "fluidlite")]
+	let c = c.arg(
+		arg!(-f --fluid [SOUNDFONT] "The soundfont to use with the embedded fluidsynth.")
+			.env("SOUNDFONT")
+			.default_value(DEFAULT_SOUNDFONT),
+	);
+
+	cfg_if! {
+		if #[cfg(all(feature = "fluidlite", feature = "midir"))] {
+			c.args(&[
+			arg!(-l --list "List available MIDI output devices."),
+			arg!(-d --device [INDEX] "Bind to the given MIDI output device instead of using the embedded synthesizer. Use --list to list available devices.")
+			.validator(validate::<usize>("the value msut be a number greater than or equal to 0")),
+			])
+		} else if #[cfg(feature = "midir")] {
+			c.args(&[
+			arg!(-l --list "List available MIDI output devices."),
+			arg!(-d --device [INDEX] "Bind to the given MIDI output device instead of using the embedded synthesizer. Use --list to list available devices.")
+			.default_value("0")
+			.validator(validate::<usize>("the value msut be a number greater than or equal to 0")),
+			])
+		} else {
+			c
+		}
+	}
 }
 
 fn validate<T: std::str::FromStr>(msg: &'static str) -> impl Fn(&str) -> Result<(), String> {

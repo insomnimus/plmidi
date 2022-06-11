@@ -1,3 +1,6 @@
+[profile.dev]
+opt-level = 2
+
 [target.x86_64-apple-darwin]
 rustflags = [
 	"-Clink-arg=-undefined",

@@ -1,3 +1,6 @@
+#[cfg(not(any(feature = "fluidlite", feature = "midir")))]
+compile_error!("you must enable at least one of fluid, fluid-bundled or system cargo features");
+
 mod app;
 #[cfg(feature = "fluidlite")]
 mod fluid;
@@ -10,6 +13,7 @@ use std::{
 	thread,
 };
 
+use cfg_if::cfg_if;
 use crossterm::{
 	event::{
 		Event,
@@ -39,6 +43,7 @@ use log::{
 	error,
 	Level,
 };
+#[cfg(feature = "midir")]
 use midir::{
 	MidiOutput,
 	MidiOutputConnection,
@@ -55,7 +60,7 @@ enum Command {
 	Prev,
 }
 
-#[cfg(feature = "fluidlite")]
+#[cfg(all(feature = "fluidlite", feature = "midir"))]
 enum Either<A, B> {
 	Left(A),
 	Right(B),
@@ -89,6 +94,7 @@ fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
 	Ok(())
 }
 
+#[cfg(feature = "midir")]
 fn list_devices() -> Result<()> {
 	let midi_out = MidiOutput::new("nodi")?;
 
@@ -112,6 +118,7 @@ fn list_devices() -> Result<()> {
 	Ok(())
 }
 
+#[cfg(feature = "midir")]
 fn get_midi(n: usize) -> Result<MidiOutputConnection> {
 	let midi_out = MidiOutput::new("nodi")?;
 
@@ -134,6 +141,7 @@ fn get_midi(n: usize) -> Result<MidiOutputConnection> {
 
 fn run() -> Result<()> {
 	let m = app::new().get_matches_from(wild::args());
+	#[cfg(feature = "midir")]
 	if m.is_present("list") {
 		return list_devices();
 	}
@@ -145,15 +153,20 @@ fn run() -> Result<()> {
 	let shuffle = m.is_present("shuffle");
 	let transpose = m.value_of_t_or_exit::<i8>("transpose");
 
-	let n_device = m.value_of_t_or_exit::<usize>("device");
-	#[cfg(not(feature = "fluidlite"))]
-	let con = get_midi(n_device)?;
-
-	#[cfg(feature = "fluidlite")]
-	let con = match m.value_of("fluidsynth") {
-		Some(p) => Either::Left(fluid::Fluid::new(p)?),
-		None => Either::Right(get_midi(n_device)?),
+	cfg_if! {
+		if #[cfg(all(feature = "fluidlite", feature = "midir"))] {
+				let con = match m.value_of_t::<usize>("device") {
+		Err(_) => Either::Left(fluid::Fluid::new(m.value_of("fluid").unwrap())?),
+		Ok(n) => Either::Right(get_midi(n)?),
 	};
+		} else if #[cfg(feature = "fluidlite")] {
+			let con = fluid::Fluid::new(m.value_of("fluid").unwrap())?;
+		} else if #[cfg(feature = "midir")] {
+			let con = get_midi(m.value_of_t_or_exit("device"))?;
+		} else {
+			compile_error!("you must enable at least one of fluid, fluid-bundled or system cargo features");
+		}
+	}
 
 	let mut tracks = m
 		.values_of("file")
@@ -174,12 +187,16 @@ fn run() -> Result<()> {
 
 	let (mut tx_done, rx_done) = mpsc::channel(0);
 	let listen = thread::spawn(move || block_on(async move { listen_keys(sender, rx_done).await }));
-	#[cfg(not(feature = "fluidlite"))]
-	playback::play(con, &tracks, receiver, repeat, speed);
-	#[cfg(feature = "fluidlite")]
-	match con {
+
+	cfg_if! {
+		if #[cfg(all(feature = "fluidlite", feature = "midir"))] {
+			match con {
 		Either::Left(con) => playback::play(con, &tracks, receiver, repeat, speed),
 		Either::Right(con) => playback::play(con, &tracks, receiver, repeat, speed),
+	}
+		} else {
+			playback::play(con, &tracks, receiver, repeat, speed);
+		}
 	}
 
 	let _ = block_on(tx_done.send(()));
