@@ -40,7 +40,7 @@ impl Track {
 
 		Ok(Self {
 			name: p
-				.file_name()
+				.file_stem()
 				.unwrap_or(p.as_os_str())
 				.to_string_lossy()
 				.into_owned(),

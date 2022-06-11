@@ -43,32 +43,56 @@ fn format_duration(t: Duration) -> String {
 	}
 }
 
-fn print(s: &str, clear: usize) {
-	fn inner(s: &str, clear: usize) -> io::Result<()> {
-		let mut stdout = io::stdout();
-		for _ in 0..clear {
-			stdout.execute(Clear(ClearType::CurrentLine))?;
-		}
+enum Print {
+	Append,
+	ReplaceLast,
+	ReplaceAll,
+}
 
-		for (i, ln) in s.lines().filter(|s| !s.is_empty()).enumerate() {
-			if i > 0 {
-				writeln!(stdout)?;
+impl Print {
+	fn print(self, s: &str) {
+		fn inner(p: Print, s: &str) -> io::Result<()> {
+			let mut stdout = io::stdout();
+			match p {
+				Print::ReplaceAll => {
+					stdout.execute(Clear(ClearType::All))?;
+				}
+				Print::Append => writeln!(stdout)?,
+				Print::ReplaceLast => {
+					stdout.execute(Clear(ClearType::UntilNewLine))?;
+				}
 			}
-			write!(stdout, "{}\r", ln)?;
-			stdout.flush()?;
-		}
 
-		Ok(())
-	}
-
-	match is_raw_mode_enabled() {
-		Ok(true) => {
-			if let Err(e) = inner(s, clear) {
-				log::error!("failed to write: {e}");
+			for (i, ln) in s.lines().enumerate() {
+				if i > 0 {
+					writeln!(stdout)?;
+				}
+				write!(stdout, "{ln}\r")?;
+				stdout.flush()?;
 			}
+			Ok(())
 		}
-		_ => println!("{s}"),
+
+		if let Ok(true) = is_raw_mode_enabled() {
+			let _ = inner(self, s);
+		} else {
+			println!("{s}");
+		}
 	}
+}
+
+fn gen_header(tracks: &[Track], speed: f32) -> String {
+	let total_duration: Duration = tracks.iter().map(|t| t.duration).sum();
+	let dur = Duration::from_micros((total_duration.as_micros() as f64 * speed as f64) as u64);
+	format!(
+		"Playing {n} track{s}
+Total duration: {total}
+Press the spacebar to play/pause, ctrl-left/right to play previous/next track
+Press the esc key or ctrl-c to exit",
+		n = tracks.len(),
+		s = if tracks.len() == 1 { "" } else { "s" },
+		total = format_duration(dur)
+	)
 }
 
 pub(crate) fn play<C: Connection>(
@@ -78,8 +102,8 @@ pub(crate) fn play<C: Connection>(
 	repeat: bool,
 	speed: f32,
 ) {
+	let header = gen_header(tracks, speed);
 	let mut n_track = 0;
-	let mut paused = false;
 
 	'outer: loop {
 		con.send_sys_rt(SystemRealtime::Reset);
@@ -88,17 +112,17 @@ pub(crate) fn play<C: Connection>(
 		let mut timer = Ticker::new(track.tpb);
 		timer.speed = speed;
 		let dur = Duration::from_micros((track.duration.as_micros() as f64 * speed as f64) as u64);
-		print(
-			&format!(
-				"playing {} [{}/{}]",
-				track.name,
-				n_track + 1,
-				tracks.len() + 1
-			),
-			if paused { 3 } else { 2 },
-		);
-		print(&format!("duration: {}", format_duration(dur)), 0);
-		paused = false;
+		Print::ReplaceAll.print(&format!(
+			"{header}
+Current: {name} [{n_track}/{total}]
+Duration = {dur}",
+			n_track = n_track + 1,
+			total = tracks.len(),
+			name = track.name,
+			dur = format_duration(dur),
+		));
+
+		let mut paused = false;
 
 		for moment in track.sheet.iter() {
 			match commands.try_next() {
@@ -110,12 +134,16 @@ pub(crate) fn play<C: Connection>(
 					continue 'outer;
 				}
 				Ok(Some(Command::Pause)) => {
-					print("paused", 0);
-					paused = true;
+					if paused {
+						Print::ReplaceLast.print("paused");
+					} else {
+						Print::Append.print("paused");
+						paused = true;
+					}
 					// Wait for the next command.
 					match block_on(commands.next()) {
 						None => break 'outer,
-						Some(Command::Pause) => print("unpaused", 1),
+						Some(Command::Pause) => Print::ReplaceLast.print("unpaused"),
 						Some(Command::Next) => break,
 						Some(Command::Prev) => {
 							n_track = n_track.saturating_sub(1);
@@ -153,7 +181,4 @@ pub(crate) fn play<C: Connection>(
 			}
 		}
 	}
-
-	// Send notification that we're done playing.
-	// let _ = done.send(());
 }

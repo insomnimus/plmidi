@@ -5,13 +5,9 @@ mod playback;
 mod track;
 
 use std::{
-	io::{
-		self,
-		Write,
-	},
+	io::{self,},
 	process,
 	thread,
-	time::Duration,
 };
 
 use crossterm::{
@@ -21,14 +17,13 @@ use crossterm::{
 		KeyCode,
 		KeyModifiers,
 	},
+	execute,
 	terminal::{
 		disable_raw_mode,
 		enable_raw_mode,
-		is_raw_mode_enabled,
-		Clear,
-		ClearType,
+		EnterAlternateScreen,
+		LeaveAlternateScreen,
 	},
-	ExecutableCommand,
 };
 use futures::{
 	channel::mpsc::{
@@ -48,6 +43,7 @@ use midir::{
 	MidiOutput,
 	MidiOutputConnection,
 };
+use rand::prelude::SliceRandom;
 
 use self::track::Track;
 
@@ -91,26 +87,6 @@ fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
 	}
 	simple_logger::init_with_level(log)?;
 	Ok(())
-}
-
-fn _print(s: &str) {
-	fn inner(s: &str) -> io::Result<()> {
-		let mut stdout = io::stdout();
-		stdout.execute(Clear(ClearType::UntilNewLine))?;
-		for (i, ln) in s.lines().filter(|s| !s.is_empty()).enumerate() {
-			if i > 0 {
-				writeln!(stdout)?;
-			}
-			write!(stdout, "{}\r", ln)?;
-			stdout.flush()?;
-		}
-		Ok(())
-	}
-	if let Ok(true) = is_raw_mode_enabled() {
-		let _ = inner(s);
-	} else {
-		println!("{}", s);
-	}
 }
 
 fn list_devices() -> Result<()> {
@@ -157,7 +133,7 @@ fn get_midi(n: usize) -> Result<MidiOutputConnection> {
 }
 
 fn run() -> Result<()> {
-	let m = app::new().get_matches();
+	let m = app::new().get_matches_from(wild::args());
 	if m.is_present("list") {
 		return list_devices();
 	}
@@ -186,13 +162,12 @@ fn run() -> Result<()> {
 		.map(Track::new)
 		.collect::<Result<Vec<_>, _>>()?;
 
-	let mut total_duration = Duration::from_secs(0);
 	for t in &mut tracks {
-		total_duration += t.duration;
 		t.sheet.transpose(transpose, false);
 	}
+
 	if shuffle {
-		todo!();
+		tracks.shuffle(&mut rand::thread_rng());
 	}
 
 	let (sender, receiver) = mpsc::channel(1);
@@ -213,6 +188,7 @@ fn run() -> Result<()> {
 }
 
 async fn listen_keys(mut sender: Sender<Command>, done: Receiver<()>) {
+	let alt = execute!(io::stdout(), EnterAlternateScreen).is_ok();
 	if let Err(e) = enable_raw_mode() {
 		eprintln!("warning: failed to enable raw mode; hotkeys may not work properly: {e}");
 	}
@@ -258,6 +234,9 @@ async fn listen_keys(mut sender: Sender<Command>, done: Receiver<()>) {
 	}
 
 	let _ = disable_raw_mode();
+	if alt {
+		let _ = execute!(io::stdout(), LeaveAlternateScreen);
+	}
 	process::exit(0);
 }
 
