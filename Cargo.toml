@@ -12,7 +12,7 @@ readme = "readme.md"
 
 [features]
 default = ["fluid-bundled"]
-system = ["nodi/midir", "midir"]
+system = ["nodi/midir"]
 system-jack = ["system", "nodi/midir-jack"]
 system-winrt = ["system", "nodi/midir-winrt"]
 fluid = ["fluidlite/pkg-config", "cpal", "parking_lot", "clap/env"]
@@ -22,7 +22,6 @@ fluid-bundled = ["fluidlite/builtin", "cpal", "parking_lot", "clap/env"]
 # Optional dependencies
 cpal = { version = "0.13.5", optional = true }
 fluidlite = { version = "0.2.1", optional = true, features = ["static"] }
-midir = { version = "0.8.0", optional = true }
 parking_lot = { version = "0.12.1", optional = true }
 
 # Required dependencies
@@ -30,7 +29,7 @@ clap = { version = "3.1.18", features = ["cargo", "unicode", "wrap_help"] }
 crossterm = { version = "0.23.2", features = ["event-stream"] }
 futures = { version = "0.3.21", features = ["executor"] }
 log = "0.4.17"
-nodi = { version = "0.19.0", features = ["hybrid-sleep"] }
+nodi = { version = "0.19.1", features = ["hybrid-sleep"] }
 simple_logger = { version = "2.1.0", default-features = false, features = ["stderr", "colored"] }
 rand = "0.8.5"
 wild = "2.0.4"

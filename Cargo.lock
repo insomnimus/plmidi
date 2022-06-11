@@ -791,9 +791,9 @@ dependencies = [
 
 [[package]]
 name = "nodi"
-version = "0.19.0"
+version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d7ce3a35ef4f4d0153063e969c684162fbda12e019835fa1c4379a217014fca"
+checksum = "a9f2f84b5502e09103a6f2d071ba45e0a5ca15f6fd6be31dd0626c479cbabdfb"
 dependencies = [
  "midir",
  "midly",
@@ -972,7 +972,6 @@ dependencies = [
  "fluidlite",
  "futures",
  "log",
- "midir",
  "nodi",
  "parking_lot 0.12.1",
  "rand",

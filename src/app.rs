@@ -17,7 +17,7 @@ const DEFAULT_SOUNDFONT: &str = {
 
 pub fn new() -> Command<'static> {
 	cfg_if! {
-		if #[cfg(feature = "midir")] {
+		if #[cfg(feature = "system")] {
 			let files = arg!([file] ... "MIDI (*.mid) files to play.").required_unless_present("list");
 		} else {
 			let files = arg!(<file> ... "MIDI (*.mid) files to play.");
@@ -54,13 +54,13 @@ pub fn new() -> Command<'static> {
 	);
 
 	cfg_if! {
-		if #[cfg(all(feature = "fluidlite", feature = "midir"))] {
+		if #[cfg(all(feature = "fluidlite", feature = "system"))] {
 			c.args(&[
 			arg!(-l --list "List available MIDI output devices."),
 			arg!(-d --device [INDEX] "Bind to the given MIDI output device instead of using the embedded synthesizer. Use --list to list available devices.")
 			.validator(validate::<usize>("the value msut be a number greater than or equal to 0")),
 			])
-		} else if #[cfg(feature = "midir")] {
+		} else if #[cfg(feature = "system")] {
 			c.args(&[
 			arg!(-l --list "List available MIDI output devices."),
 			arg!(-d --device [INDEX] "Bind to the given MIDI output device instead of using the embedded synthesizer. Use --list to list available devices.")

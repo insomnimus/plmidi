@@ -1,4 +1,4 @@
-#[cfg(not(any(feature = "fluidlite", feature = "midir")))]
+#[cfg(not(any(feature = "fluidlite", feature = "system")))]
 compile_error!("you must enable at least one of fluid, fluid-bundled or system cargo features");
 
 mod app;
@@ -43,8 +43,8 @@ use log::{
 	error,
 	Level,
 };
-#[cfg(feature = "midir")]
-use midir::{
+#[cfg(feature = "system")]
+use nodi::midir::{
 	MidiOutput,
 	MidiOutputConnection,
 };
@@ -60,7 +60,7 @@ enum Command {
 	Prev,
 }
 
-#[cfg(all(feature = "fluidlite", feature = "midir"))]
+#[cfg(all(feature = "fluidlite", feature = "system"))]
 enum Either<A, B> {
 	Left(A),
 	Right(B),
@@ -94,7 +94,7 @@ fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
 	Ok(())
 }
 
-#[cfg(feature = "midir")]
+#[cfg(feature = "system")]
 fn list_devices() -> Result<()> {
 	let midi_out = MidiOutput::new("nodi")?;
 
@@ -118,7 +118,7 @@ fn list_devices() -> Result<()> {
 	Ok(())
 }
 
-#[cfg(feature = "midir")]
+#[cfg(feature = "system")]
 fn get_midi(n: usize) -> Result<MidiOutputConnection> {
 	let midi_out = MidiOutput::new("nodi")?;
 
@@ -141,7 +141,7 @@ fn get_midi(n: usize) -> Result<MidiOutputConnection> {
 
 fn run() -> Result<()> {
 	let m = app::new().get_matches_from(wild::args());
-	#[cfg(feature = "midir")]
+	#[cfg(feature = "system")]
 	if m.is_present("list") {
 		return list_devices();
 	}
@@ -154,14 +154,14 @@ fn run() -> Result<()> {
 	let transpose = m.value_of_t_or_exit::<i8>("transpose");
 
 	cfg_if! {
-		if #[cfg(all(feature = "fluidlite", feature = "midir"))] {
+		if #[cfg(all(feature = "fluidlite", feature = "system"))] {
 				let con = match m.value_of_t::<usize>("device") {
 		Err(_) => Either::Left(fluid::Fluid::new(m.value_of("fluid").unwrap())?),
 		Ok(n) => Either::Right(get_midi(n)?),
 	};
 		} else if #[cfg(feature = "fluidlite")] {
 			let con = fluid::Fluid::new(m.value_of("fluid").unwrap())?;
-		} else if #[cfg(feature = "midir")] {
+		} else if #[cfg(feature = "system")] {
 			let con = get_midi(m.value_of_t_or_exit("device"))?;
 		} else {
 			compile_error!("you must enable at least one of fluid, fluid-bundled or system cargo features");
@@ -189,7 +189,7 @@ fn run() -> Result<()> {
 	let listen = thread::spawn(move || block_on(async move { listen_keys(sender, rx_done).await }));
 
 	cfg_if! {
-		if #[cfg(all(feature = "fluidlite", feature = "midir"))] {
+		if #[cfg(all(feature = "fluidlite", feature = "system"))] {
 			match con {
 		Either::Left(con) => playback::play(con, &tracks, receiver, repeat, speed),
 		Either::Right(con) => playback::play(con, &tracks, receiver, repeat, speed),
