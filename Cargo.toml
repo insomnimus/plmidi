@@ -1,7 +1,7 @@
 [package]
 name = "plmidi"
 description = "Play MIDI files from the command line."
-version = "0.14.0"
+version = "0.14.1"
 edition = "2021"
 authors = [ "Taylan Gökkaya <insomnimus@protonmail.com>" ]
 license = "MIT"
@@ -25,11 +25,11 @@ fluidlite = { version = "0.2.1", optional = true, features = ["static"] }
 parking_lot = { version = "0.12.1", optional = true }
 
 # Required dependencies
-clap = { version = "3.1.18", features = ["cargo", "unicode", "wrap_help"] }
+clap = { version = "=3.1.18", features = ["cargo", "unicode", "wrap_help"] }
 crossterm = { version = "0.23.2", features = ["event-stream"] }
 futures = { version = "0.3.21", features = ["executor"] }
 log = "0.4.17"
-nodi = { version = "0.19.1", features = ["hybrid-sleep"] }
+nodi = { version = "0.19.2", features = ["hybrid-sleep"] }
 simple_logger = { version = "2.1.0", default-features = false, features = ["stderr", "colored"] }
 rand = "0.8.5"
 wild = "2.0.4"

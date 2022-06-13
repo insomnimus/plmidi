@@ -106,7 +106,9 @@ pub(crate) fn play<C: Connection>(
 	let mut n_track = 0;
 
 	'outer: loop {
+		// Reset the synth.
 		con.send_sys_rt(SystemRealtime::Reset);
+
 		let mut counter = 0_u32;
 		let track = &tracks[n_track];
 		let mut timer = Ticker::new(track.tpb);
@@ -134,6 +136,7 @@ Duration = {dur}",
 					continue 'outer;
 				}
 				Ok(Some(Command::Pause)) => {
+					con.all_notes_off();
 					if paused {
 						Print::ReplaceLast.print("paused");
 					} else {
