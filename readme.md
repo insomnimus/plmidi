@@ -66,7 +66,3 @@ cargo install --path . --features system --no-default-features
 - `plmidi foo.mid`
 - (If the `system` feature is enabled) `plmidi --device 2 foo.mid`
 - (If the `fluid` feature is enabled) `plmidi --fluidsynth ~/soundfonts/some-soundfont.sf2 foo.mid`
-
-# Troubleshooting
-- When playing with the system midi devices, playing next/previous track might leave playing notes hanging even though a "system reset" message is sent; if you have a solution please do a PR or create an issue.
-- With any synth, pausing the track will leave previously playing notes on; there isn't any fix for the system synthesizers that I'm aware of but I'm waiting for an upstream feature for the built-in Fluidsynth.

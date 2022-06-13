@@ -1,7 +1,7 @@
 [package]
 name = "plmidi"
 description = "Play MIDI files from the command line."
-version = "0.14.1"
+version = "0.14.2"
 edition = "2021"
 authors = [ "Taylan Gökkaya <insomnimus@protonmail.com>" ]
 license = "MIT"

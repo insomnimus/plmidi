@@ -108,6 +108,8 @@ pub(crate) fn play<C: Connection>(
 	'outer: loop {
 		// Reset the synth.
 		con.send_sys_rt(SystemRealtime::Reset);
+		// System synths seem to ignore the above so at least turn all ntoes off.
+		con.all_notes_off();
 
 		let mut counter = 0_u32;
 		let track = &tracks[n_track];
@@ -184,4 +186,7 @@ Duration = {dur}",
 			}
 		}
 	}
+
+	con.send_sys_rt(SystemRealtime::Reset);
+	con.all_notes_off();
 }
