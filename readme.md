@@ -4,7 +4,7 @@ A command line MIDI player with an embedded synthesizer.
 # Installation
 ## Windows: With Scoop
 First add [my bucket](https://github.com/insomnimus/scoop-bucket) to scoop:\
-`scoop bucket add insomnia https://github.com/inssomnimus/scoop-bucket`
+`scoop bucket add insomnia https://github.com/insomnimus/scoop-bucket`
 
 Update scoop:\
 `scoop update`
