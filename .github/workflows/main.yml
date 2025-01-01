@@ -23,9 +23,6 @@
               "os": "ubuntu-latest"
             },
             {
-              "os": "macOS-latest"
-            },
-            {
               "os": "windows-latest"
             }
           ]
