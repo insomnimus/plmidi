@@ -96,32 +96,14 @@
               "cross": false
             },
             {
-              "target": "x86_64-unknown-linux-musl",
-              "file": "plmidi-x86_64-unknown-linux-musl.tar.gz",
-              "os": "ubuntu-latest",
-              "cross": true
-            },
-            {
               "target": "x86_64-unknown-linux-gnu",
               "file": "plmidi-x86_64-unknown-linux-gnu.tar.gz",
               "os": "ubuntu-latest",
               "cross": false
             },
             {
-              "target": "aarch64-unknown-linux-musl",
-              "file": "plmidi-aarch64-unknown-linux-musl.tar.gz",
-              "os": "ubuntu-latest",
-              "cross": true
-            },
-            {
               "target": "aarch64-unknown-linux-gnu",
               "file": "plmidi-aarch64-unknown-linux-gnu.tar.gz",
-              "os": "ubuntu-latest",
-              "cross": true
-            },
-            {
-              "target": "armv7-unknown-linux-musleabihf",
-              "file": "plmidi-armv7-unknown-linux-musleabihf.tar.gz",
               "os": "ubuntu-latest",
               "cross": true
             },

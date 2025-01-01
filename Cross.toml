@@ -1,5 +1,19 @@
+[build]
+zig.enable = true
+env.passthrough = ["DEBIAN_FRONTEND=noninteractive"]
+
 [target.aarch64-unknown-linux-gnu]
-image = "ghcr.io/insomnimus/audio-rs-cross:aarch64"
+env.passthrough = ["PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig"]
+pre-build = [
+	"dpkg --add-architecture arm64",
+	"apt-get update",
+	"apt-get install --no-install-recommends -y libasound2-dev:arm64 pkg-config",
+]
 
 [target.armv7-unknown-linux-gnueabihf]
-image = "ghcr.io/insomnimus/audio-rs-cross:armhf"
+env.passthrough = ["PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig"]
+pre-build = [
+	"dpkg --add-architecture armhf",
+	"apt-get update",
+	"apt-get install --no-install-recommends -y libasound2-dev:armhf pkg-config",
+]
