@@ -16,8 +16,10 @@ Install the app:\
 Grab a binary for your platform from the [releases page](https://github.com/insomnimus/plmidi/releases).
 
 ## BYOB: Build Your Own Binary
-# Feature Flags
+### Buidl-Time Environment Variables
+- `$PLMIDI_DEFAULT_SOUNDFONT`: (Optional) Path to the default soundfont file. The file doesn't need to exist.
 
+### Feature Flags
 - `--features=system`: Enable playback through MIDI out devices registered on the system.
 - `--features=system-jack`: Same with `system` but uses the Jack backend.
 - `--features=winrt`: Same with `system` except it uses the WinRT backend. Note that currently WinRT does not recognize OmniMidi or Virtual Midi Synth so I wouldn't recommend it.
@@ -27,8 +29,7 @@ Grab a binary for your platform from the [releases page](https://github.com/inso
 You need an up to date rust toolchain installed.
 
 On *NIX systems, you also need alsa development libraries:
-
-```sh
+```shell
 # Debian and derivatives
 apt install libasound2-dev
 
@@ -37,8 +38,7 @@ dnf install alsa-lib-devel
 ```
 
 To use the jack backend, you also need jack development libraries:
-
-```sh
+```shell
 # Debian and derivatives
 apt install libjack-jackd2-dev
 # RHEL and derivatives
@@ -49,12 +49,10 @@ You can install from crates.io:
 `cargo install plmidi --features system`
 
 Or, you can clone it:
-
 ```shell
 # to install after a git clone
 git clone https://github.com/insomnimus/plmidi
 cd plmidi
-git checkout main
 cargo install --path .
 # To enable the system apis via the `jack` backend:
 cargo install --path . --features system-jack
@@ -66,3 +64,6 @@ cargo install --path . --features system --no-default-features
 - `plmidi foo.mid`
 - (If the `system` feature is enabled) `plmidi --device 2 foo.mid`
 - (If the `fluid` feature is enabled) `plmidi --fluidsynth ~/soundfonts/some-soundfont.sf2 foo.mid`
+
+## Known Bugs
+- On windows, the fluidlite backend doesn't seem to respect sample rates, thus rates higher than 441.khz cause pitch-shifted sped-up sounds.

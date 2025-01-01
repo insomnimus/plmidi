@@ -8,10 +8,15 @@ use clap::{
 
 #[cfg(feature = "fluidlite")]
 const DEFAULT_SOUNDFONT: &str = {
-	if cfg!(windows) {
-		r"C:\soundfonts\default.sf2"
-	} else {
-		"/usr/share/soundfonts/default.sf2"
+	match option_env!("PLMIDI_DEFAULT_SOUNDFONT") {
+		None => {
+			if cfg!(windows) {
+				r"C:\soundfonts\default.sf2"
+			} else {
+				"/usr/share/soundfonts/default.sf2"
+			}
+		}
+		Some(x) => x,
 	}
 };
 
@@ -50,7 +55,8 @@ pub fn new() -> Command<'static> {
 	let c = c.arg(
 		arg!(-f --fluid [SOUNDFONT] "The soundfont to use with the embedded fluidsynth.")
 			.env("SOUNDFONT")
-			.default_value(DEFAULT_SOUNDFONT),
+			.default_value(DEFAULT_SOUNDFONT)
+			.default_missing_value(DEFAULT_SOUNDFONT),
 	);
 
 	cfg_if! {

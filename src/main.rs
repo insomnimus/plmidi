@@ -8,7 +8,9 @@ mod playback;
 mod track;
 
 use std::{
-	io::{self,},
+	io::{
+		self,
+	},
 	process,
 	thread,
 };
@@ -19,7 +21,11 @@ use crossterm::{
 		Event,
 		EventStream,
 		KeyCode,
+		KeyEventKind,
 		KeyModifiers,
+		KeyboardEnhancementFlags,
+		PopKeyboardEnhancementFlags,
+		PushKeyboardEnhancementFlags,
 	},
 	execute,
 	terminal::{
@@ -88,7 +94,7 @@ fn init_logger(n: u64) -> Result<(), log::SetLoggerError> {
 				}
 			}
 		}
-		fluidlite::Log::set(&LogLevel::DEBUG, L);
+		fluidlite::Log::set(LogLevel::DEBUG, L);
 	}
 	simple_logger::init_with_level(log)?;
 	Ok(())
@@ -208,6 +214,11 @@ async fn listen_keys(mut sender: Sender<Command>, done: Receiver<()>) {
 	let alt = execute!(io::stdout(), EnterAlternateScreen).is_ok();
 	if let Err(e) = enable_raw_mode() {
 		eprintln!("warning: failed to enable raw mode; hotkeys may not work properly: {e}");
+	} else {
+		let _ = execute!(
+			io::stdout(),
+			PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+		);
 	}
 
 	let mut events = EventStream::new()
@@ -220,13 +231,14 @@ async fn listen_keys(mut sender: Sender<Command>, done: Receiver<()>) {
 			_ = done.next() => break true,
 			e = events.next() => e,
 		};
+
 		let should_break = match res {
 			None => true,
 			Some(Err(e)) => {
 				error!("input error: {e}");
 				true
 			}
-			Some(Ok(Event::Key(k))) => match k.code {
+			Some(Ok(Event::Key(k))) if k.kind == KeyEventKind::Press => match k.code {
 				KeyCode::Esc => true,
 				KeyCode::Char('c' | 'd' | 'q') if k.modifiers == KeyModifiers::CONTROL => true,
 				KeyCode::Left if k.modifiers == KeyModifiers::CONTROL => {
@@ -247,12 +259,13 @@ async fn listen_keys(mut sender: Sender<Command>, done: Receiver<()>) {
 
 	if !received_done {
 		drop(sender);
-		let _ = done.next();
+		let _ = done.next().await;
 	}
 
 	let _ = disable_raw_mode();
 	if alt {
 		let _ = execute!(io::stdout(), LeaveAlternateScreen);
+		let _ = execute!(io::stdout(), PopKeyboardEnhancementFlags);
 	}
 	process::exit(0);
 }

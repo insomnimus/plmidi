@@ -110,8 +110,9 @@ impl Fluid {
 					}
 				},
 				err_fn,
+				None,
 			),
-			SampleFormat::F32 => dev.build_output_stream(
+			_ => dev.build_output_stream(
 				&config,
 				move |data: &mut [f32], _: &OutputCallbackInfo| {
 					let fl = fl.lock();
@@ -121,6 +122,7 @@ impl Fluid {
 					}
 				},
 				err_fn,
+				None,
 			),
 		}
 		.map_err(Error::BuildStream)?;

@@ -1,25 +1,32 @@
 {
   "name": "All",
-  "on": [
-    "push",
-    "pull_request"
-  ],
+  "on": {
+    "push": {
+      "paths-ignore": [
+        "readme.md",
+        "LICENSE"
+      ]
+    },
+    "pull_request": {
+      "paths-ignore": [
+        "readme.md",
+        "LICENSE"
+      ]
+    }
+  },
   "jobs": {
     "test": {
       "strategy": {
         "matrix": {
           "include": [
             {
-              "os": "ubuntu-latest",
-              "target": "x86_64-unknown-linux-gnu"
+              "os": "ubuntu-latest"
             },
             {
-              "os": "macOS-11",
-              "target": "x86_64-apple-darwin"
+              "os": "macOS-latest"
             },
             {
-              "os": "windows-latest",
-              "target": "x86_64-pc-windows-msvc"
+              "os": "windows-latest"
             }
           ]
         }
@@ -27,11 +34,11 @@
       "runs-on": "${{ matrix.os }}",
       "steps": [
         {
-          "name": "Setup | Checkout",
-          "uses": "actions/checkout@v2"
+          "name": "checkout",
+          "uses": "actions/checkout@v4"
         },
         {
-          "name": "Setup | Install Dependencies",
+          "name": "install dependencies",
           "if": "matrix.os == 'ubuntu-latest'",
           "env": {
             "DEBIAN_FRONTEND": "noninteractive"
@@ -39,22 +46,12 @@
           "run": "sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential pkg-config libasound2-dev"
         },
         {
-          "name": "Setup | Rust",
-          "uses": "actions-rs/toolchain@v1.0.7",
-          "with": {
-            "toolchain": "stable",
-            "override": true,
-            "profile": "minimal",
-            "target": "${{ matrix.target }}"
-          }
+          "name": "setup rust",
+          "run": "rustup update"
         },
         {
-          "name": "Check | Tests",
-          "uses": "actions-rs/cargo@v1.0.3",
-          "with": {
-            "command": "test",
-            "args": "--target ${{ matrix.target }} --features 'fluid-bundled system'"
-          }
+          "name": "run tests",
+          "run": "cargo test --features 'fluid-bundled,system'"
         }
       ]
     },
@@ -62,45 +59,80 @@
       "name": "Build Release Binaries",
       "needs": "test",
       "if": "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')",
+      "env": {
+          "CFLAGS": "-Os -g0",
+          "XXFLAGS": "-Os -g0",
+      },
       "continue-on-error": true,
       "strategy": {
-        "fail-fast": false,
+        "fail-fast": true,
         "matrix": {
           "include": [
             {
-              "target": "x86_64-unknown-linux-gnu",
-              "name": "plmidi-x86_64-linux.tar.gz",
-              "os": "ubuntu-latest"
-            },
-            {
               "target": "x86_64-pc-windows-msvc",
-              "name": "plmidi-x86_64-windows.zip",
-              "os": "windows-latest"
+              "file": "plmidi-x86_64-pc-windows-msvc.zip",
+              "os": "windows-latest",
+              "cross": false
             },
             {
-              "target": "x86_64-apple-darwin",
-              "name": "plmidi-x86_64-osx.tar.gz",
-              "os": "macos-11"
-            },
-            {
-              "target": "aarch64-apple-darwin",
-              "name": "plmidi-aarch64-osx.tar.gz",
-              "os": "macos-11"
+              "target": "aarch64-pc-windows-msvc",
+              "file": "plmidi-aarch64-pc-windows-msvc.zip",
+              "os": "windows-latest",
+              "cross": false
             },
             {
               "target": "i686-pc-windows-msvc",
-              "name": "plmidi-i686-windows.zip",
-              "os": "windows-latest"
+              "file": "plmidi-i686-pc-windows-msvc.zip",
+              "os": "windows-latest",
+              "cross": false
+            },
+            {
+              "target": "x86_64-apple-darwin",
+              "file": "plmidi-x86_64-apple-darwin.tar.gz",
+              "os": "macos-latest",
+              "cross": false
+            },
+            {
+              "target": "aarch64-apple-darwin",
+              "file": "plmidi-aarch64-apple-darwin.tar.gz",
+              "os": "macos-latest",
+              "cross": false
+            },
+            {
+              "target": "x86_64-unknown-linux-musl",
+              "file": "plmidi-x86_64-unknown-linux-musl.tar.gz",
+              "os": "ubuntu-latest",
+              "cross": true
+            },
+            {
+              "target": "x86_64-unknown-linux-gnu",
+              "file": "plmidi-x86_64-unknown-linux-gnu.tar.gz",
+              "os": "ubuntu-latest",
+              "cross": false
+            },
+            {
+              "target": "aarch64-unknown-linux-musl",
+              "file": "plmidi-aarch64-unknown-linux-musl.tar.gz",
+              "os": "ubuntu-latest",
+              "cross": true
             },
             {
               "target": "aarch64-unknown-linux-gnu",
-              "name": "plmidi-aarch64-linux.tar.gz",
-              "os": "ubuntu-latest"
+              "file": "plmidi-aarch64-unknown-linux-gnu.tar.gz",
+              "os": "ubuntu-latest",
+              "cross": true
+            },
+            {
+              "target": "armv7-unknown-linux-musleabihf",
+              "file": "plmidi-armv7-unknown-linux-musleabihf.tar.gz",
+              "os": "ubuntu-latest",
+              "cross": true
             },
             {
               "target": "armv7-unknown-linux-gnueabihf",
-              "name": "plmidi-armv7-linux.tar.gz",
-              "os": "ubuntu-latest"
+              "file": "plmidi-armv7-unknown-linux-gnueabihf.tar.gz",
+              "os": "ubuntu-latest",
+              "cross": true
             }
           ]
         }
@@ -108,19 +140,19 @@
       "runs-on": "${{ matrix.os }}",
       "steps": [
         {
-          "name": "Setup | Checkout",
-          "uses": "actions/checkout@v2"
+          "name": "checkout",
+          "uses": "actions/checkout@v4"
         },
         {
-          "name": "Setup | Cache Cargo",
-          "uses": "actions/cache@v2.1.6",
+          "name": "cache cargo",
+          "uses": "actions/cache@v4",
           "with": {
             "path": "~/.cargo/registry\n~/.cargo/git\n",
             "key": "${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}"
           }
         },
         {
-          "name": "Setup | Install Dependencies",
+          "name": "install dependencies",
           "if": "matrix.target == 'x86_64-unknown-linux-gnu'",
           "env": {
             "DEBIAN_FRONTEND": "noninteractive"
@@ -128,40 +160,45 @@
           "run": "sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential pkg-config libasound2-dev"
         },
         {
-          "name": "Setup | Rust",
-          "uses": "actions-rs/toolchain@v1.0.7",
-          "with": {
-            "toolchain": "stable",
-            "override": true,
-            "profile": "minimal",
-            "target": "${{ matrix.target }}"
-          }
+          "name": "setup rust",
+          "run": "rustup update && rustup default nightly && rustup target add ${{ matrix.target }} && rustup component add rust-src"
         },
         {
-          "name": "Build | Build",
-          "uses": "actions-rs/cargo@v1.0.3",
-          "with": {
-            "command": "build",
-            "args": "--release --target ${{ matrix.target }} --features 'fluid-bundled system'",
-            "use-cross": "${{ matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-unknown-linux-gnu' }}"
-          }
+          "name": "install cross",
+          "if": "matrix.cross",
+          "run": "cargo install cross"
         },
         {
-          "name": "PostBuild | Prepare",
+          "name": "build native windows",
+          "if": "!matrix.cross && contains(matrix.os, 'windows')",
+          "run": "cargo rustc -rq --features 'system,fluid-bundled,fluid-use-bindgen' --target ${{ matrix.target }} -Z 'build-std=core,alloc,std,panic_abort' -- -Copt-level=s"
+        },
+        {
+          "name": "build native ${{ matrix.os }}",
+          "if": "!matrix.cross",
+          "run": "cargo rustc -rq --features 'system,fluid-bundled,fluid-use-bindgen' --target ${{ matrix.target }} -Z 'build-std=core,alloc,std,panic_abort' -- -Copt-level=s"
+        },
+        {
+          "name": "cross build",
+          "if": "matrix.cross",
+          "run": "cross rustc -rq --features 'system,fluid-bundled,fluid-use-bindgen' --target ${{ matrix.target }} -Z 'build-std=core,alloc,std,panic_abort' -- -Copt-level=s"
+        },
+        {
+          "name": "prepare artifacts",
           "if": "matrix.os != 'windows-latest'",
-          "run": "cd target/${{ matrix.target }}/release\nstrip plmidi || true\ntar czvf ../../../${{ matrix.name }} plmidi\ncd -"
+          "run": "cd target/${{ matrix.target }}/release && tar -czf ../../../${{ matrix.file }} plmidi && cd -"
         },
         {
+          "name": "prepare artifacts",
           "if": "matrix.os == 'windows-latest'",
-          "name": "PostBuild | Prepare",
-          "run": "cd target/${{ matrix.target }}/release\n7z a ../../../${{ matrix.name }} plmidi.exe\ncd -"
+          "run": "cd target/${{ matrix.target }}/release\n 7z -bso0 -bsp0 a ../../../${{ matrix.file }} plmidi.exe\n cd -"
         },
         {
-          "name": "Deploy | Upload Artifacts",
-          "uses": "actions/upload-artifact@v2",
+          "name": "upload artifacts",
+          "uses": "actions/upload-artifact@v4",
           "with": {
-            "name": "${{ matrix.name }}",
-            "path": "${{ matrix.name }}"
+            "name": "${{ matrix.file }}",
+            "path": "${{ matrix.file }}"
           }
         }
       ]
@@ -173,63 +210,25 @@
       "runs-on": "ubuntu-latest",
       "steps": [
         {
-          "name": "Setup | Checkout",
-          "uses": "actions/checkout@v2.3.4",
+          "name": "checkout",
+          "uses": "actions/checkout@v4",
           "with": {
             "fetch-depth": 0
           }
         },
         {
-          "name": "Setup | go",
-          "uses": "actions/setup-go@v2",
+          "name": "download artifacts",
+          "uses": "actions/download-artifact@v4",
           "with": {
-            "go-version": "^1.15.7"
+            "path": "./artifacts"
           }
         },
         {
-          "name": "Setup | Artifacts",
-          "uses": "actions/download-artifact@v2"
-        },
-        {
-          "name": "Setup | Release notes",
-          "run": "GO111MODULE=on go install github.com/git-chglog/git-chglog/cmd/git-chglog@0.9.1\ngit-chglog -c .github/chglog/release.yml \"$(git describe --tags)\" > RELEASE.md"
-        },
-        {
-          "name": "Deploy | Publish",
-          "uses": "softprops/action-gh-release@v1",
-          "with": {
-            "files": "plmidi-*/plmidi-*",
-            "body_path": "RELEASE.md"
-          }
-        }
-      ]
-    },
-    "publish": {
-      "name": "Publish to crates.io",
-      "if": "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')",
-      "needs": "test",
-      "runs-on": "windows-latest",
-      "steps": [
-        {
-          "name": "Setup | Checkout",
-          "uses": "actions/checkout@v2.3.4"
-        },
-        {
-          "name": "Setup | Rust",
-          "uses": "actions-rs/toolchain@v1.0.7",
-          "with": {
-            "toolchain": "stable",
-            "override": true,
-            "profile": "minimal"
-          }
-        },
-        {
-          "name": "Deploy | Publish",
-          "uses": "actions-rs/cargo@v1.0.3",
-          "with": {
-            "command": "publish",
-            "args": "--token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty"
-          }
+          "name": "create github release",
+          "env": {
+            "GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
+          },
+          "run": "gh release create ${{ github.ref_name }} ./artifacts/*/* --generate-notes --title ${{ github.ref_name }}"
         }
       ]
     }
