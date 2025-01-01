@@ -16,7 +16,7 @@ Install the app:\
 Grab a binary for your platform from the [releases page](https://github.com/insomnimus/plmidi/releases).
 
 ## BYOB: Build Your Own Binary
-### Buidl-Time Environment Variables
+### Build-Time Environment Variables
 - `$PLMIDI_DEFAULT_SOUNDFONT`: (Optional) Path to the default soundfont file. The file doesn't need to exist.
 
 ### Feature Flags
